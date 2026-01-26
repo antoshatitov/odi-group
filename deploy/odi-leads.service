@@ -1,0 +1,15 @@
+[Unit]
+Description=ODI Lead API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/odi/server
+EnvironmentFile=/var/www/odi/server/.env
+ExecStart=/usr/bin/node /var/www/odi/server/src/index.js
+Restart=on-failure
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1200" y2="800" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F4EFE6"/>
+      <stop offset="1" stop-color="#E5F0ED"/>
+    </linearGradient>
+    <linearGradient id="land" x1="0" y1="560" x2="1200" y2="800" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D6E3DE"/>
+      <stop offset="1" stop-color="#C4D6CE"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#sky)"/>
+  <rect y="530" width="1200" height="270" fill="url(#land)"/>
+  <path d="M260 560L520 260L780 560" stroke="#2B5D57" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M330 560H710" stroke="#D0A15B" stroke-width="10" stroke-linecap="round"/>
+  <rect x="450" y="430" width="200" height="150" rx="22" fill="#F6F1E8" stroke="#C9D0C9" stroke-width="6"/>
+</svg>

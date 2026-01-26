@@ -1,0 +1,71 @@
+:root {
+  color-scheme: light;
+  --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
+  --font-body: 'Commissioner', 'Segoe UI', sans-serif;
+  --font-mono: 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --text-xs: clamp(0.74rem, 0.72rem + 0.2vw, 0.82rem);
+  --text-sm: clamp(0.84rem, 0.8rem + 0.3vw, 0.95rem);
+  --text-md: clamp(1rem, 0.95rem + 0.4vw, 1.1rem);
+  --text-lg: clamp(1.15rem, 1.05rem + 0.6vw, 1.35rem);
+  --text-xl: clamp(1.35rem, 1.2rem + 0.9vw, 1.7rem);
+  --text-2xl: clamp(1.8rem, 1.4rem + 1.6vw, 2.4rem);
+  --text-3xl: clamp(2.2rem, 1.8rem + 2.4vw, 3.1rem);
+  --display-1: clamp(2.8rem, 2.2rem + 3.6vw, 4.6rem);
+  --display-2: clamp(3.4rem, 2.6rem + 4.2vw, 5.3rem);
+
+  --color-ink-900: #121917;
+  --color-ink-800: #1b2421;
+  --color-ink-700: #2b3431;
+  --color-ink-600: #3a4541;
+  --color-ink-500: #4c5854;
+  --color-stone-50: #f8f6f1;
+  --color-stone-100: #f2efe7;
+  --color-stone-200: #e7e2d4;
+  --color-mist-100: #e6efec;
+  --color-mist-200: #d8e5e0;
+  --color-moss-600: #1f5f53;
+  --color-moss-700: #1a4d45;
+  --color-amber-500: #d0a15b;
+  --color-amber-600: #c18a45;
+  --color-rose-500: #c77e6c;
+
+  --gradient-hero: radial-gradient(
+      120% 120% at 90% 0%,
+      rgba(31, 95, 83, 0.18) 0%,
+      rgba(31, 95, 83, 0) 55%
+    ),
+    radial-gradient(130% 130% at 10% 10%, rgba(208, 161, 91, 0.2) 0%, rgba(0, 0, 0, 0) 55%),
+    linear-gradient(180deg, #f7f4ee 0%, #edf3f1 100%);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --space-10: 8rem;
+
+  --radius-xs: 0.4rem;
+  --radius-s: 0.65rem;
+  --radius-m: 1rem;
+  --radius-l: 1.4rem;
+  --radius-xl: 2rem;
+
+  --shadow-soft: 0 18px 40px rgba(18, 25, 23, 0.08);
+  --shadow-strong: 0 30px 60px rgba(18, 25, 23, 0.16);
+
+  --container: min(1120px, calc(100% - 2.4rem));
+  --container-wide: min(1280px, calc(100% - 2.4rem));
+  --gutter: clamp(1rem, 2vw, 2rem);
+
+  --duration-fast: 160ms;
+  --duration-med: 320ms;
+  --duration-slow: 520ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --focus-ring: 0 0 0 3px rgba(31, 95, 83, 0.3);
+}

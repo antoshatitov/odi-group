@@ -1,0 +1,26 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F7F4EE"/>
+      <stop offset="1" stop-color="#E4EFEA"/>
+    </linearGradient>
+    <radialGradient id="accent" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(980 80) rotate(130) scale(520 420)">
+      <stop offset="0" stop-color="#1F5F53" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#1F5F53" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#accent)"/>
+  <rect x="80" y="100" width="1040" height="430" rx="40" fill="#F4F1EA" stroke="#DAD4C6"/>
+  <text x="140" y="240" fill="#1B2421" font-size="64" font-family="Cormorant Garamond, serif" font-weight="600">
+    ОДИ
+  </text>
+  <text x="140" y="320" fill="#1B2421" font-size="44" font-family="Cormorant Garamond, serif" font-weight="600">
+    Индивидуальные дома
+  </text>
+  <text x="140" y="390" fill="#2B3431" font-size="28" font-family="Commissioner, sans-serif">
+    Калининград и область · Проектирование · Строительство под ключ
+  </text>
+  <path d="M880 420L980 260L1080 420" stroke="#1F5F53" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M910 420H1050" stroke="#D0A15B" stroke-width="10" stroke-linecap="round"/>
+</svg>

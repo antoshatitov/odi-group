@@ -1,0 +1,17 @@
+{
+  "name": "odi-group",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/server"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace apps/web run dev",
+    "build:web": "npm --workspace apps/web run build",
+    "lint:web": "npm --workspace apps/web run lint",
+    "format:web": "npm --workspace apps/web run format",
+    "preview:web": "npm --workspace apps/web run preview",
+    "dev:server": "npm --workspace apps/server run dev",
+    "start:server": "npm --workspace apps/server run start"
+  }
+}
