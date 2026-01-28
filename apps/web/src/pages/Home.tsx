@@ -4,6 +4,7 @@ import Badge from '../components/Badge'
 import Button from '../components/Button'
 import Card from '../components/Card'
 import Container from '../components/Container'
+import CostCalculator from '../components/CostCalculator'
 import LeadForm from '../components/LeadForm'
 import Modal from '../components/Modal'
 import Section from '../components/Section'
@@ -75,6 +76,7 @@ const Home = () => {
   })
   const [activeProject, setActiveProject] = useState<Project | null>(null)
   const [activeImage, setActiveImage] = useState<GalleryItem | null>(null)
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
 
   useEffect(() => {
     document.title = 'ОДИ — строительство индивидуальных домов в Калининграде'
@@ -118,9 +120,9 @@ const Home = () => {
                 качества и сопровождение на каждом этапе.
               </p>
               <div className="hero-actions reveal" data-delay="3">
-                <a className="btn btn-primary btn-lg" href="/#consultation">
+                <Button size="lg" type="button" onClick={() => setIsCalculatorOpen(true)}>
                   Получить консультацию
-                </a>
+                </Button>
                 <a className="btn btn-outline btn-lg" href="/#projects">
                   Смотреть проекты
                 </a>
@@ -429,6 +431,38 @@ const Home = () => {
           </div>
         </Container>
       </Section>
+
+      <Modal
+        isOpen={isCalculatorOpen}
+        title="Расчет стоимости строительства"
+        onClose={() => setIsCalculatorOpen(false)}
+        side={
+          <div className="stack">
+            <Badge>Персональный расчет</Badge>
+            <p className="muted">
+              Оценка носит ориентировочный характер. Финальную смету уточняем после консультации и
+              анализа участка.
+            </p>
+            <div className="divider" />
+            <div className="stack" style={{ gap: 'var(--space-3)' }}>
+              <div>
+                <strong>Ответ в течение 2 часов</strong>
+                <div className="muted">Свяжемся по телефону и уточним детали проекта.</div>
+              </div>
+              <div>
+                <strong>Безопасно и конфиденциально</strong>
+                <div className="muted">Используем данные только для расчета и консультации.</div>
+              </div>
+              <div>
+                <strong>Прозрачная смета</strong>
+                <div className="muted">Покажем стоимость по этапам и закрепим в договоре.</div>
+              </div>
+            </div>
+          </div>
+        }
+      >
+        <CostCalculator />
+      </Modal>
 
       <Modal
         isOpen={Boolean(activeProject)}
