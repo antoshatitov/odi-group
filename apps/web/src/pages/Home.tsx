@@ -111,7 +111,7 @@ const Home = () => {
                 Калининград и область
               </span>
               <h1 className="display-lg reveal" data-delay="2">
-                Строим индивидуальные дома, где всё продумано до последней детали
+                Строим дома, в которых всё продумано до последней детали
               </h1>
               <p className="lead reveal" data-delay="3">
                 Проектирование, строительство и инженерия под ключ. Прозрачные сроки, контроль
@@ -357,7 +357,7 @@ const Home = () => {
         <Container>
           <div className="stack" style={{ gap: 'var(--space-6)' }}>
             <div className="stack">
-              <span className="eyebrow">Галерея</span>
+              <span className="eyebrow">Построено нами</span>
               <h2 className="h2">Реализованные объекты в Калининградской области</h2>
             </div>
             <div className="gallery-grid">

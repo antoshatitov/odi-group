@@ -6,7 +6,7 @@ const navLinks = [
   { label: 'О компании', href: '/#about' },
   { label: 'Услуги', href: '/#services' },
   { label: 'Проекты', href: '/#projects' },
-  { label: 'Галерея', href: '/#gallery' },
+  { label: 'Построено', href: '/#gallery' },
   { label: 'Контакты', href: '/#contacts' },
 ]
 
@@ -25,7 +25,7 @@ const SiteHeader = () => {
       <div className="container header-inner">
         <a className="logo" href="/">
           <span>ОДИ</span>
-          <small>индивидуальные дома</small>
+          <small>строительная компания</small>
         </a>
         <nav className="nav-links" aria-label="Основная навигация">
           {navLinks.map((link) => (
@@ -35,8 +35,8 @@ const SiteHeader = () => {
           ))}
         </nav>
         <div className="header-actions">
-          <a className="btn btn-outline btn-sm" href="tel:+74012999999">
-            +7 (4012) 99-99-99
+          <a className="btn btn-outline btn-sm" href="tel:+79244422800">
+            +7 924 442-28-00
           </a>
           <a className="btn btn-primary btn-sm" href="/#consultation">
             Получить консультацию
@@ -69,8 +69,8 @@ const SiteHeader = () => {
               ))}
             </div>
             <div className="mobile-nav-actions">
-              <a className="btn btn-outline" href="tel:+74012999999">
-                +7 (4012) 99-99-99
+              <a className="btn btn-outline" href="tel:+79244422800">
+                +7 924 442-28-00
               </a>
               <a className="btn btn-primary" href="/#consultation" onClick={() => setOpen(false)}>
                 Получить консультацию
