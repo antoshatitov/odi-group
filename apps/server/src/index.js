@@ -277,6 +277,22 @@ const logCalcEvent = ({ event, reason, ip, phone, userAgent, details }) => {
   )
 }
 
+const logCalcQuarantine = ({ reason, ip, phone, userAgent, details }) => {
+  server.log.warn(
+    {
+      event: 'calc_quarantine_log',
+      reason,
+      ipHash: hashValue(ip || 'unknown'),
+      phoneHash: phone ? hashValue(phone) : null,
+      userAgent: userAgent || 'unknown',
+      time: new Date().toISOString(),
+      metrics: { ...calcMetrics },
+      details,
+    },
+    'calc_quarantine_log',
+  )
+}
+
 const sendCalculatorMessage = async (chatId, text) => {
   if (!CALC_BOT_TOKEN || !chatId) {
     return { ok: false, skipped: true }
@@ -328,6 +344,8 @@ const costSchema = {
       openedAt: { type: 'number' },
       submittedAt: { type: 'number' },
       action: { type: 'string', maxLength: 40 },
+      clientSuspected: { type: 'boolean' },
+      clientSuspectedReason: { type: 'string', maxLength: 40 },
       captchaToken: { type: 'string', maxLength: 200 },
     },
   },
@@ -345,6 +363,8 @@ server.post('/api/cost-estimate', { schema: costSchema }, async (request, reply)
     openedAt,
     submittedAt,
     action,
+    clientSuspected,
+    clientSuspectedReason,
     captchaToken,
   } = request.body
 
@@ -431,9 +451,18 @@ server.post('/api/cost-estimate', { schema: costSchema }, async (request, reply)
 
   const submitDelta = Number(submittedAt) - Number(openedAt)
   const quarantineReasons = []
+  const addQuarantineReason = (reason) => {
+    if (reason && !quarantineReasons.includes(reason)) {
+      quarantineReasons.push(reason)
+    }
+  }
 
   if (Number.isFinite(submitDelta) && submitDelta < CALC_FAST_SUBMIT_MS) {
-    quarantineReasons.push('fast_submit')
+    addQuarantineReason('fast_submit')
+  }
+
+  if (clientSuspected) {
+    addQuarantineReason(clientSuspectedReason || 'client_suspected')
   }
 
   if (quarantineReasons.length === 0) {
@@ -464,7 +493,24 @@ server.post('/api/cost-estimate', { schema: costSchema }, async (request, reply)
       ip,
       phone: normalizedPhone,
       userAgent,
-      details: { sent: result.ok, skipped: result.skipped || false },
+      details: {
+        sent: result.ok,
+        skipped: result.skipped || false,
+        clientSuspected: Boolean(clientSuspected),
+        clientSuspectedReason: clientSuspectedReason || null,
+      },
+    })
+    logCalcQuarantine({
+      reason: quarantineReasons.join(','),
+      ip,
+      phone: normalizedPhone,
+      userAgent,
+      details: {
+        sent: result.ok,
+        skipped: result.skipped || false,
+        clientSuspected: Boolean(clientSuspected),
+        clientSuspectedReason: clientSuspectedReason || null,
+      },
     })
     reply.code(200).send(responsePayload)
     return

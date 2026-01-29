@@ -7,6 +7,46 @@ import Input from './Input'
 import { formatRubles } from '../utils/format'
 
 const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
+const LOCAL_ATTEMPTS_KEY = 'odi_calc_attempts'
+const LOCAL_LIMIT_WINDOW_MS = 2 * 60 * 1000
+const LOCAL_LIMIT_MAX = 2
+const SOFT_DELAY_MS = 300
+const FAST_SUBMIT_MS = 4000
+
+const readLocalAttempts = () => {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(LOCAL_ATTEMPTS_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((item) => typeof item === 'number')
+  } catch {
+    return []
+  }
+}
+
+const writeLocalAttempts = (attempts: number[]) => {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(LOCAL_ATTEMPTS_KEY, JSON.stringify(attempts))
+  } catch {
+    // ignore storage errors
+  }
+}
+
+const getRecentAttempts = (now: number) => {
+  const attempts = readLocalAttempts().filter((timestamp) => now - timestamp < LOCAL_LIMIT_WINDOW_MS)
+  writeLocalAttempts(attempts)
+  return attempts
+}
+
+const recordAttempt = (now: number) => {
+  const attempts = getRecentAttempts(now)
+  attempts.push(now)
+  writeLocalAttempts(attempts)
+  return attempts.length
+}
 
 const packageOptions = [
   {
@@ -98,24 +138,42 @@ const CostCalculator = () => {
       return
     }
 
+    const attemptTime = Date.now()
+    const recentAttempts = getRecentAttempts(attemptTime)
+    if (recentAttempts.length >= LOCAL_LIMIT_MAX) {
+      setError('Слишком частые запросы. Попробуйте снова через пару минут.')
+      setStatus('error')
+      return
+    }
+
+    recordAttempt(attemptTime)
     setStatus('loading')
 
     try {
+      await new Promise((resolve) => setTimeout(resolve, SOFT_DELAY_MS))
+      const submittedAt = Date.now()
+      const clientSuspected = submittedAt - openedAt < FAST_SUBMIT_MS
+
+      const requestPayload = {
+        floors: Number(floors),
+        area: areaValue,
+        packageType,
+        name: name.trim(),
+        phone,
+        consent,
+        website: honeypot,
+        openedAt,
+        submittedAt,
+        action: 'cost_estimate',
+        ...(clientSuspected
+          ? { clientSuspected: true, clientSuspectedReason: 'fast_submit' }
+          : {}),
+      }
+
       const response = await fetch(`${API_BASE}/api/cost-estimate`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          floors: Number(floors),
-          area: areaValue,
-          packageType,
-          name: name.trim(),
-          phone,
-          consent,
-          website: honeypot,
-          openedAt,
-          submittedAt: Date.now(),
-          action: 'cost_estimate',
-        }),
+        body: JSON.stringify(requestPayload),
       })
 
       const payload = await response.json().catch(() => ({}))
@@ -250,7 +308,7 @@ const CostCalculator = () => {
             resetResult()
           }}
           placeholder="+7 (___) ___-__-__"
-          pattern="[0-9+()\s-]{7,20}"
+          pattern="[0-9+() -]{7,20}"
         />
 
         <label className="field" style={{ display: 'none' }} aria-hidden="true">
