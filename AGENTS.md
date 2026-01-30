@@ -20,8 +20,18 @@ exact commands and conventions you find.
 ## Quick facts
 
 - Repo root: the current repository working directory (do not assume a fixed absolute path)
-- Git: unknown until detected
-- Known config files: unknown until detected
+- Git: yes
+- Known config files: `package.json`, `package-lock.json`, `apps/web/package.json`,
+  `apps/web/vite.config.ts`, `apps/web/eslint.config.js`, `apps/web/prettier.config.cjs`,
+  `apps/web/tsconfig.json`, `apps/web/tsconfig.app.json`, `apps/web/tsconfig.node.json`,
+  `apps/server/package.json`, `.github/workflows/ci.yml`, `deploy/nginx.conf`,
+  `deploy/odi-leads.service`, `.env.example`
+
+## Tech stack
+
+- Frontend: React 18, Vite 6, TypeScript, React Router
+- Backend: Node.js 20+, Fastify 5
+- Deploy: Nginx, systemd
 
 ## Playwright MCP (ALLOWED)
 
@@ -47,6 +57,10 @@ Tooling detected:
 - Build (frontend): `npm run build:web`
 - Lint (frontend): `npm run lint:web`
 - Format (frontend): `npm run format:web`
+- Dev (frontend): `npm run dev:web`
+- Preview (frontend): `npm run preview:web`
+- Dev (server): `npm run dev:server`
+- Start (server): `npm run start:server`
 - Test (all): not configured
 - Test (single): not configured
 
@@ -68,9 +82,6 @@ Single test guidance should be explicit. For example, prefer one of:
 
 ## Code style guidelines
 
-Since there is no code in the repo, use these defaults when creating new code.
-If the project introduces its own standards, update this file to match them.
-
 ### Imports
 
 - Prefer absolute imports rooted at the project entry point.
@@ -87,6 +98,8 @@ If the project introduces its own standards, update this file to match them.
 - Prefer trailing commas where supported to minimize diff noise.
 - Use double quotes in JSON and single quotes in JS/TS unless the formatter
   enforces double quotes.
+- Prettier config: printWidth 100, singleQuote true, trailingComma all, semi false.
+- Use ESM modules (package.json `type: module`).
 
 ### Types and interfaces
 
@@ -138,6 +151,7 @@ If the project introduces its own standards, update this file to match them.
 ### Security and secrets
 
 - Never commit secrets or credentials.
+- When working with git, verify sensitive project info (phone numbers, addresses, names, etc.) is not exposed publicly or on github.com.
 - Use environment variables for configuration.
 - Redact sensitive data in logs and errors.
 
