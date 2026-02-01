@@ -24,7 +24,9 @@ export type Project = {
 
 export type GalleryItem = {
   id: string
-  image: ImageAsset
+  title: string
   location: string
-  year: string
+  description: string
+  cover: ImageAsset
+  photos: ImageAsset[]
 }

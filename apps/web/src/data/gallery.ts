@@ -1,40 +1,97 @@
 import type { GalleryItem } from '../types'
 
-export const galleryItems: GalleryItem[] = [
+type RawImage = {
+  path: string
+  src: string
+}
+
+const descriptionModules = import.meta.glob('../assets/builded/**/*.md', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>
+
+const imageModules = import.meta.glob(
+  '../assets/builded/**/*.{jpg,jpeg,JPG,JPEG,png,webp}',
   {
-    id: 'g-01',
-    image: { src: '/images/gallery-01.svg', alt: 'Дом в посёлке Холмогоры' },
-    location: 'пос. Холмогоры',
-    year: '2024',
+    eager: true,
+    import: 'default',
   },
-  {
-    id: 'g-02',
-    image: { src: '/images/gallery-02.svg', alt: 'Дом в районе Куршской косы' },
-    location: 'Куршская коса',
-    year: '2023',
+) as Record<string, string>
+
+const normalizePath = (path: string) => path.replace(/\\/g, '/').normalize('NFC')
+
+const getFolderName = (path: string) =>
+  normalizePath(path).split('/').slice(-2, -1)[0] ?? ''
+
+const isDescriptionFile = (path: string) =>
+  normalizePath(path).endsWith('/Описание.md')
+
+const parseDescription = (raw: string) => {
+  const lines = raw
+    .split('\n')
+    .map((line) => line.replace(/\r/g, '').trim())
+    .filter(Boolean)
+  const [title = '', locationLine = '', ...rest] = lines
+  const location = locationLine.replace(/^Локация:\s*/i, '').trim()
+  const description = rest.join(' ')
+  return { title, location, description }
+}
+
+const sortImages = (images: RawImage[]) =>
+  images.slice().sort((a, b) => {
+    const aIsTitle = /title_photo/i.test(a.path)
+    const bIsTitle = /title_photo/i.test(b.path)
+    if (aIsTitle !== bIsTitle) return aIsTitle ? -1 : 1
+
+    const aIsPlan = /plan/i.test(a.path)
+    const bIsPlan = /plan/i.test(b.path)
+    if (aIsPlan !== bIsPlan) return aIsPlan ? 1 : -1
+
+    return a.path.localeCompare(b.path)
+  })
+
+const formatAlt = (title: string, path: string, index: number) => {
+  if (/plan/i.test(path)) return `${title} — планировка`
+  return `${title} — фото ${index + 1}`
+}
+
+const imagesByFolder = Object.entries(imageModules).reduce<Record<string, RawImage[]>>(
+  (acc, [path, src]) => {
+    const folder = getFolderName(path)
+    if (!folder) return acc
+    const list = acc[folder] ?? []
+    list.push({ path, src })
+    acc[folder] = list
+    return acc
   },
-  {
-    id: 'g-03',
-    image: { src: '/images/gallery-03.svg', alt: 'Дом в районе Лесного озера' },
-    location: 'Лесное озеро',
-    year: '2024',
-  },
-  {
-    id: 'g-04',
-    image: { src: '/images/gallery-04.svg', alt: 'Дом в Светлогорске' },
-    location: 'Светлогорск',
-    year: '2022',
-  },
-  {
-    id: 'g-05',
-    image: { src: '/images/gallery-05.svg', alt: 'Дом в Янтарном' },
-    location: 'Янтарный',
-    year: '2023',
-  },
-  {
-    id: 'g-06',
-    image: { src: '/images/gallery-06.svg', alt: 'Дом в Зеленоградске' },
-    location: 'Зеленоградск',
-    year: '2024',
-  },
-]
+  {},
+)
+
+export const galleryItems: GalleryItem[] = Object.entries(descriptionModules)
+  .filter(([path]) => isDescriptionFile(path))
+  .map(([path, raw], index) => {
+    const folder = getFolderName(path)
+    const { title, location, description } = parseDescription(raw)
+    const safeTitle = title || folder || `Проект ${index + 1}`
+    const images = sortImages(imagesByFolder[folder] ?? [])
+    const coverImage =
+      images.find((image) => /title_photo/i.test(image.path)) ?? images[0]
+    const photos = images.map((image, photoIndex) => ({
+      src: image.src,
+      alt: formatAlt(safeTitle, image.path, photoIndex),
+    }))
+
+    return {
+      id: folder || `builded-${index + 1}`,
+      title: safeTitle,
+      location,
+      description,
+      cover: {
+        src: coverImage?.src ?? '',
+        alt: `${safeTitle} — главное фото`,
+      },
+      photos,
+    }
+  })
+  .sort((a, b) => a.title.localeCompare(b.title, 'ru'))
