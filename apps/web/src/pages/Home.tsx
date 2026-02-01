@@ -75,7 +75,8 @@ const Home = () => {
     bedrooms: '',
   })
   const [activeProject, setActiveProject] = useState<Project | null>(null)
-  const [activeImage, setActiveImage] = useState<GalleryItem | null>(null)
+  const [activeGallery, setActiveGallery] = useState<GalleryItem | null>(null)
+  const [activeGalleryIndex, setActiveGalleryIndex] = useState(0)
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
 
   useEffect(() => {
@@ -83,15 +84,22 @@ const Home = () => {
   }, [])
 
   useEffect(() => {
-    if (!activeImage) return
+    if (!activeGallery || activeGallery.photos.length === 0) return
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setActiveImage(null)
+      if (event.key === 'ArrowRight') {
+        setActiveGalleryIndex(
+          (index) => (index + 1) % activeGallery.photos.length,
+        )
+      }
+      if (event.key === 'ArrowLeft') {
+        setActiveGalleryIndex((index) =>
+          (index - 1 + activeGallery.photos.length) % activeGallery.photos.length,
+        )
       }
     }
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
-  }, [activeImage])
+  }, [activeGallery])
 
   const filteredProjects = useMemo(() => {
     return projects.filter((project) => {
@@ -102,6 +110,27 @@ const Home = () => {
       return areaOk && budgetOk && bedroomsOk && floorsOk
     })
   }, [filters])
+
+  const openGallery = (item: GalleryItem) => {
+    setActiveGallery(item)
+    setActiveGalleryIndex(0)
+  }
+
+  const activeGalleryPhoto = activeGallery?.photos[activeGalleryIndex]
+
+  const handleGalleryPrev = () => {
+    if (!activeGallery || activeGallery.photos.length === 0) return
+    setActiveGalleryIndex(
+      (index) => (index - 1 + activeGallery.photos.length) % activeGallery.photos.length,
+    )
+  }
+
+  const handleGalleryNext = () => {
+    if (!activeGallery || activeGallery.photos.length === 0) return
+    setActiveGalleryIndex(
+      (index) => (index + 1) % activeGallery.photos.length,
+    )
+  }
 
   return (
     <>
@@ -368,11 +397,20 @@ const Home = () => {
                   key={item.id}
                   className="gallery-card"
                   type="button"
-                  onClick={() => setActiveImage(item)}
+                  onClick={() => openGallery(item)}
+                  aria-label={`Открыть галерею проекта ${item.title}`}
                 >
-                  <img src={item.image.src} alt={item.image.alt} loading="lazy" />
-                  <div className="gallery-caption">
-                    {item.location} · {item.year}
+                  <div className="gallery-media">
+                    <img src={item.cover.src} alt={item.cover.alt} loading="lazy" />
+                    <div className="gallery-overlay">
+                      <span>Смотреть фото</span>
+                      <span>{item.photos.length} фото</span>
+                    </div>
+                  </div>
+                  <div className="gallery-body">
+                    <span className="gallery-location">{item.location}</span>
+                    <h3 className="gallery-title">{item.title}</h3>
+                    <p className="gallery-description">{item.description}</p>
                   </div>
                 </button>
               ))}
@@ -535,11 +573,60 @@ const Home = () => {
         )}
       </Modal>
 
-      {activeImage && (
-        <div className="lightbox" onClick={() => setActiveImage(null)} role="dialog">
-          <img src={activeImage.image.src} alt={activeImage.image.alt} />
-        </div>
-      )}
+      <Modal
+        isOpen={Boolean(activeGallery)}
+        title={activeGallery?.title ?? ''}
+        onClose={() => setActiveGallery(null)}
+        side={
+          activeGallery ? (
+            <div className="gallery-modal-side">
+              <span className="gallery-location">{activeGallery.location}</span>
+              <p className="muted">{activeGallery.description}</p>
+              <div className="gallery-thumbs">
+                {activeGallery.photos.map((image, index) => (
+                  <button
+                    key={image.src}
+                    className="gallery-thumb"
+                    type="button"
+                    onClick={() => setActiveGalleryIndex(index)}
+                    data-active={index === activeGalleryIndex}
+                    aria-label={`Показать фото ${index + 1}`}
+                  >
+                    <img src={image.src} alt={image.alt} loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : undefined
+        }
+      >
+        {activeGallery && activeGalleryPhoto && (
+          <div className="gallery-modal">
+            <div className="gallery-main">
+              <img src={activeGalleryPhoto.src} alt={activeGalleryPhoto.alt} />
+              <button
+                className="gallery-nav gallery-nav-prev"
+                type="button"
+                onClick={handleGalleryPrev}
+                aria-label="Предыдущее фото"
+              >
+                ‹
+              </button>
+              <button
+                className="gallery-nav gallery-nav-next"
+                type="button"
+                onClick={handleGalleryNext}
+                aria-label="Следующее фото"
+              >
+                ›
+              </button>
+            </div>
+            <div className="gallery-counter">
+              {activeGalleryIndex + 1} / {activeGallery.photos.length}
+            </div>
+          </div>
+        )}
+      </Modal>
     </>
   )
 }
