@@ -11,12 +11,6 @@ on:
       - ".github/workflows/ci.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "apps/web/**"
-      - "apps/server/**"
-      - "package.json"
-      - "package-lock.json"
-      - ".github/workflows/ci.yml"
 
 jobs:
   web:
