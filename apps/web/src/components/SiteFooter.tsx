@@ -11,9 +11,9 @@ const SiteFooter = () => {
         </div>
         <div className="stack">
           <strong>Контакты</strong>
-          <a href="tel:+74012999999">+7 (4012) 99-99-99</a>
-          <a href="mailto:info@odi-house.ru">info@odi-house.ru</a>
-          <span>Калининград, ул. Озёрная, 18</span>
+          <a href="tel:+79244422800">+7 924 442-28-00</a>
+          <a href="mailto:bon2801@yandex.ru">bon2801@yandex.ru</a>
+          <span>Калининград, ул. Третьяковская 2, офис 209</span>
         </div>
         <div className="stack">
           <strong>Документы</strong>

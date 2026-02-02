@@ -24,7 +24,7 @@ const SiteHeader = () => {
     <header className="site-header">
       <div className="container header-inner">
         <a className="logo" href="/">
-          <span>ОДИ</span>
+          <img src="/images/logo.png" alt="ОДИ" />
           <small>строительная компания</small>
         </a>
         <nav className="nav-links" aria-label="Основная навигация">
@@ -56,7 +56,10 @@ const SiteHeader = () => {
         <div className="mobile-nav" role="dialog" aria-modal="true">
           <div className="mobile-nav-panel">
             <div className="mobile-nav-header">
-              <span className="logo">ОДИ</span>
+              <a className="logo" href="/" onClick={() => setOpen(false)}>
+                <img src="/images/logo.png" alt="ОДИ" />
+                <small>строительная компания</small>
+              </a>
               <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
                 Закрыть
               </Button>
