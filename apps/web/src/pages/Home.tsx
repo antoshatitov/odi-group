@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import Badge from '../components/Badge'
 import Button from '../components/Button'
@@ -20,7 +20,7 @@ const services = [
   },
   {
     title: 'Строительство под ключ',
-    text: 'Фундамент, коробка, кровля, инженерные сети и отделка — единый контракт и контроль.',
+    text: 'Фундамент, коробка, кровля, инженерные сети и отделка — единый договор и контроль.',
   },
   {
     title: 'Технический надзор',
@@ -32,7 +32,7 @@ const services = [
   },
   {
     title: 'Инженерные сети',
-    text: 'Отопление, водоснабжение, вентиляция и электрика интегрированы в единую систему.',
+    text: 'Отопление, водоснабжение, вентиляция и электрика.',
   },
   {
     title: 'Сервис после сдачи',
@@ -51,7 +51,7 @@ const steps = [
   },
   {
     title: 'Договор и график',
-    text: 'Фиксируем сроки, этапы и ответственность. Назначаем персонального куратора.',
+    text: 'ФИКСИРУЕМ СРОКИ, ЭТАПЫ И ОТВЕТСТВЕННОСТЬ.',
   },
   {
     title: 'Строительство',
@@ -67,6 +67,9 @@ const steps = [
   },
 ]
 
+const mapScriptSrc =
+  'https://api-maps.yandex.ru/services/constructor/1.0/js/?um=constructor%3A89b804451933550959e37798984c47c98d8ff6a4a68d360d3953ec8b92dcb7ba&width=100%25&height=100%25&lang=ru_RU&scroll=true'
+
 const Home = () => {
   const [filters, setFilters] = useState({
     area: '',
@@ -78,9 +81,21 @@ const Home = () => {
   const [activeGallery, setActiveGallery] = useState<GalleryItem | null>(null)
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0)
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
+  const mapContainerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     document.title = 'ОДИ — строительство индивидуальных домов в Калининграде'
+  }, [])
+
+  useEffect(() => {
+    const container = mapContainerRef.current
+    if (!container || container.dataset.mapInitialized === 'true') return
+    const script = document.createElement('script')
+    script.src = mapScriptSrc
+    script.async = true
+    script.charset = 'utf-8'
+    container.appendChild(script)
+    container.dataset.mapInitialized = 'true'
   }, [])
 
   useEffect(() => {
@@ -150,7 +165,7 @@ const Home = () => {
               </p>
               <div className="hero-actions reveal" data-delay="3">
                 <Button size="lg" type="button" onClick={() => setIsCalculatorOpen(true)}>
-                  Получить консультацию
+                  Расчет стоимости
                 </Button>
                 <a className="btn btn-outline btn-lg" href="/#projects">
                   Смотреть проекты
@@ -158,16 +173,16 @@ const Home = () => {
               </div>
               <div className="hero-stats">
                 <div className="stat-card">
-                  <strong>12 лет</strong>
-                  <span className="muted">на рынке Калининграда</span>
+                  <strong>8 лет</strong>
+                  <span className="muted">опыта в строительстве</span>
                 </div>
                 <div className="stat-card">
-                  <strong>140+</strong>
-                  <span className="muted">домов сданы под ключ</span>
+                  <strong>76 домов</strong>
+                  <span className="muted">сданы под ключ</span>
                 </div>
                 <div className="stat-card">
-                  <strong>5 лет</strong>
-                  <span className="muted">гарантии на работы</span>
+                  <strong>От 6%</strong>
+                  <span className="muted">для семей с детьми</span>
                 </div>
               </div>
             </div>
@@ -196,14 +211,20 @@ const Home = () => {
           <div className="about-grid">
             <div className="stack">
               <span className="eyebrow">О компании</span>
-              <h2 className="h2">ОДИ — команда, которая строит дома как инженерные системы</h2>
+              <h2 className="h2">
+                ОДИ — строительная компания, которая строит индивидуальные жилые дома в
+                Калининграде и области
+              </h2>
               <p className="lead">
-                Мы соединяем архитектуру, инженерные решения и контроль качества в единую
-                технологию строительства. Наши объекты рассчитаны на долгую эксплуатацию и
-                комфортную жизнь семьи.
+                За 8 лет мы построили 76 домов и ежегодно строим от 10 проектов — под ключ и без
+                суеты для клиента. Наш подход простой: вы выбираете дом и принимаете решения по
+                пунктам, а все заботы — от организации работ и материалов до контроля качества и
+                сроков — берём на себя. Слаженная команда и отточенные процессы позволяют получить
+                ключи от готового дома уже через 2–3 месяца. Вы заказываете — мы делаем идеально. И
+                делаем так, чтобы вашим домом хотелось гордиться.
               </p>
               <div className="project-specs">
-                <span>Собственный технический отдел</span>
+                <span>Разработка проектов для строительства</span>
                 <span>Локальные подрядчики и поставщики</span>
                 <span>Контроль качества по чек-листам</span>
                 <span>Фото- и видеоотчёты на каждом этапе</span>
@@ -214,7 +235,7 @@ const Home = () => {
                 <strong>Что вы получаете</strong>
                 <div className="divider" />
                 <ul className="stack" style={{ paddingLeft: '1.2rem', margin: 0 }}>
-                  <li>Понятный календарный график и персонального менеджера проекта.</li>
+                  <li>Понятный график строительства и консультации на всех этапах.</li>
                   <li>Юридически закреплённую стоимость и сроки в договоре.</li>
                   <li>Подбор и проверку инженерных решений под ваш участок.</li>
                   <li>Гарантию и сопровождение после сдачи.</li>
@@ -238,6 +259,41 @@ const Home = () => {
                   <strong>{service.title}</strong>
                   <span className="muted">{service.text}</span>
                 </Card>
+              ))}
+            </div>
+          </div>
+        </Container>
+      </Section>
+
+      <Section id="gallery" tone="toned">
+        <Container>
+          <div className="stack" style={{ gap: 'var(--space-6)' }}>
+            <div className="stack">
+              <span className="eyebrow">Построено нами</span>
+              <h2 className="h2">Реализованные объекты в Калининградской области</h2>
+            </div>
+            <div className="gallery-grid">
+              {galleryItems.map((item) => (
+                <button
+                  key={item.id}
+                  className="gallery-card"
+                  type="button"
+                  onClick={() => openGallery(item)}
+                  aria-label={`Открыть галерею проекта ${item.title}`}
+                >
+                  <div className="gallery-media">
+                    <img src={item.cover.src} alt={item.cover.alt} loading="lazy" />
+                    <div className="gallery-overlay">
+                      <span>Смотреть фото</span>
+                      <span>{item.photos.length} фото</span>
+                    </div>
+                  </div>
+                  <div className="gallery-body">
+                    <span className="gallery-location">{item.location}</span>
+                    <h3 className="gallery-title">{item.title}</h3>
+                    <p className="gallery-description">{item.description}</p>
+                  </div>
+                </button>
               ))}
             </div>
           </div>
@@ -384,41 +440,6 @@ const Home = () => {
         </Container>
       </Section>
 
-      <Section id="gallery" tone="toned">
-        <Container>
-          <div className="stack" style={{ gap: 'var(--space-6)' }}>
-            <div className="stack">
-              <span className="eyebrow">Построено нами</span>
-              <h2 className="h2">Реализованные объекты в Калининградской области</h2>
-            </div>
-            <div className="gallery-grid">
-              {galleryItems.map((item) => (
-                <button
-                  key={item.id}
-                  className="gallery-card"
-                  type="button"
-                  onClick={() => openGallery(item)}
-                  aria-label={`Открыть галерею проекта ${item.title}`}
-                >
-                  <div className="gallery-media">
-                    <img src={item.cover.src} alt={item.cover.alt} loading="lazy" />
-                    <div className="gallery-overlay">
-                      <span>Смотреть фото</span>
-                      <span>{item.photos.length} фото</span>
-                    </div>
-                  </div>
-                  <div className="gallery-body">
-                    <span className="gallery-location">{item.location}</span>
-                    <h3 className="gallery-title">{item.title}</h3>
-                    <p className="gallery-description">{item.description}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </Container>
-      </Section>
-
       <Section id="contacts">
         <Container>
           <div className="contact-grid">
@@ -429,42 +450,35 @@ const Home = () => {
                 <div>
                   <strong>Телефон</strong>
                   <div>
-                    <a href="tel:+74012999999">+7 (4012) 99-99-99</a>
+                    <a href="tel:+79244422800">+7 924 442-28-00</a>
                   </div>
                 </div>
                 <div>
                   <strong>Email</strong>
                   <div>
-                    <a href="mailto:info@odi-house.ru">info@odi-house.ru</a>
+                    <a href="mailto:bon2801@yandex.ru">bon2801@yandex.ru</a>
                   </div>
                 </div>
                 <div>
                   <strong>Мессенджеры</strong>
                   <div className="hero-actions">
-                    <a className="btn btn-outline btn-sm" href="https://t.me/odi_house">
+                    <a className="btn btn-outline btn-sm" href="https://t.me/o781781">
                       Telegram
                     </a>
-                    <a className="btn btn-outline btn-sm" href="https://wa.me/74012999999">
+                    <a className="btn btn-outline btn-sm" href="https://wa.me/79244422800">
                       WhatsApp
                     </a>
                   </div>
                 </div>
                 <div>
                   <strong>Адрес</strong>
-                  <div>Калининград, ул. Озёрная, 18</div>
+                  <div>Калининград, ул. Третьяковская 2, офис 209</div>
                 </div>
-                <Badge>Работаем пн-сб 9:00-19:00</Badge>
+                <Badge>Работаем пн-сб с 9:00 до 19:00</Badge>
               </div>
             </Card>
             <div className="map-frame">
-              <iframe
-                title="Карта Калининграда"
-                src="https://www.openstreetmap.org/export/embed.html?bbox=20.414%2C54.704%2C20.583%2C54.742&layer=mapnik"
-                width="100%"
-                height="100%"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+              <div className="map-widget" ref={mapContainerRef} />
             </div>
           </div>
         </Container>
