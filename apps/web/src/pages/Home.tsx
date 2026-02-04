@@ -1,15 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import Badge from '../components/Badge'
-import Button from '../components/Button'
 import Card from '../components/Card'
 import Container from '../components/Container'
-import CostCalculator from '../components/CostCalculator'
 import LeadForm from '../components/LeadForm'
 import Modal from '../components/Modal'
 import Section from '../components/Section'
+import { SHOW_PROJECTS } from '../config/featureFlags'
 import { galleryItems } from '../data/gallery'
 import { projects } from '../data/projects'
+import ContactsSection from '../sections/ContactsSection'
+import GallerySection from '../sections/GallerySection'
+import HeroSection from '../sections/HeroSection'
+import ProjectsSection from '../sections/ProjectsSection'
+import ServicesSection from '../sections/ServicesSection'
 import type { GalleryItem, Project } from '../types'
 import { formatArea, formatPrice } from '../utils/format'
 
@@ -70,18 +75,47 @@ const steps = [
 const mapScriptSrc =
   'https://api-maps.yandex.ru/services/constructor/1.0/js/?um=constructor%3A89b804451933550959e37798984c47c98d8ff6a4a68d360d3953ec8b92dcb7ba&width=100%25&height=100%25&lang=ru_RU&scroll=true'
 
+const CostCalculator = lazy(() => import('../components/CostCalculator'))
+
+type ProjectFilters = {
+  area: string
+  floors: string
+  budget: string
+  bedrooms: string
+}
+
+const parseNumberParam = (value: string | null) =>
+  value && /^[0-9]+([.,][0-9]+)?$/.test(value) ? value.replace(',', '.') : ''
+
+const parseFiltersFromParams = (params: URLSearchParams): ProjectFilters => {
+  const floors = params.get('floors')
+  return {
+    area: parseNumberParam(params.get('area')),
+    floors: floors === '1' || floors === '2' ? floors : 'any',
+    budget: parseNumberParam(params.get('budget')),
+    bedrooms: parseNumberParam(params.get('bedrooms')),
+  }
+}
+
+const buildSearchParams = (filters: ProjectFilters) => {
+  const params = new URLSearchParams()
+  if (filters.area) params.set('area', filters.area)
+  if (filters.floors !== 'any') params.set('floors', filters.floors)
+  if (filters.budget) params.set('budget', filters.budget)
+  if (filters.bedrooms) params.set('bedrooms', filters.bedrooms)
+  return params
+}
+
 const Home = () => {
-  const [filters, setFilters] = useState({
-    area: '',
-    floors: 'any',
-    budget: '',
-    bedrooms: '',
-  })
+  const [searchParams, setSearchParams] = useSearchParams()
+  const filters = useMemo(() => parseFiltersFromParams(searchParams), [searchParams])
   const [activeProject, setActiveProject] = useState<Project | null>(null)
   const [activeGallery, setActiveGallery] = useState<GalleryItem | null>(null)
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0)
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
+  const galleryMainRef = useRef<HTMLDivElement | null>(null)
+  const [isGalleryFullscreen, setIsGalleryFullscreen] = useState(false)
 
   useEffect(() => {
     document.title = 'ОДИ — строительство индивидуальных домов в Калининграде'
@@ -90,12 +124,35 @@ const Home = () => {
   useEffect(() => {
     const container = mapContainerRef.current
     if (!container || container.dataset.mapInitialized === 'true') return
-    const script = document.createElement('script')
-    script.src = mapScriptSrc
-    script.async = true
-    script.charset = 'utf-8'
-    container.appendChild(script)
-    container.dataset.mapInitialized = 'true'
+
+    const loadMap = () => {
+      if (!container || container.dataset.mapInitialized === 'true') return
+      const script = document.createElement('script')
+      script.src = mapScriptSrc
+      script.async = true
+      script.charset = 'utf-8'
+      container.appendChild(script)
+      container.dataset.mapInitialized = 'true'
+    }
+
+    if (!('IntersectionObserver' in window)) {
+      loadMap()
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadMap()
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '200px 0px' },
+    )
+
+    observer.observe(container)
+
+    return () => observer.disconnect()
   }, [])
 
   useEffect(() => {
@@ -116,6 +173,20 @@ const Home = () => {
     return () => document.removeEventListener('keydown', handleKey)
   }, [activeGallery])
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsGalleryFullscreen(document.fullscreenElement === galleryMainRef.current)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  useEffect(() => {
+    if (activeGallery) return
+    if (!document.fullscreenElement) return
+    document.exitFullscreen().catch(() => {})
+  }, [activeGallery])
+
   const filteredProjects = useMemo(() => {
     return projects.filter((project) => {
       const areaOk = filters.area ? project.area >= Number(filters.area) : true
@@ -129,6 +200,11 @@ const Home = () => {
   const openGallery = (item: GalleryItem) => {
     setActiveGallery(item)
     setActiveGalleryIndex(0)
+  }
+
+  const handleFiltersChange = (nextFilters: ProjectFilters) => {
+    const params = buildSearchParams(nextFilters)
+    setSearchParams(params)
   }
 
   const activeGalleryPhoto = activeGallery?.photos[activeGalleryIndex]
@@ -147,64 +223,31 @@ const Home = () => {
     )
   }
 
+  const toggleGalleryFullscreen = async () => {
+    const element = galleryMainRef.current
+    if (!element) return
+
+    if (!document.fullscreenEnabled || !element.requestFullscreen) {
+      if (activeGalleryPhoto?.src) {
+        window.open(activeGalleryPhoto.src, '_blank', 'noopener')
+      }
+      return
+    }
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen()
+      } else {
+        await element.requestFullscreen()
+      }
+    } catch {
+      // ignore fullscreen errors
+    }
+  }
+
   return (
     <>
-      <Section className="hero" id="hero">
-        <Container size="wide">
-          <div className="hero-grid">
-            <div className="hero-content">
-              <span className="eyebrow reveal" data-delay="1">
-                Калининград и область
-              </span>
-              <h1 className="display-lg reveal" data-delay="2">
-                Строим дома, в которых всё продумано до последней детали
-              </h1>
-              <p className="lead reveal" data-delay="3">
-                Проектирование, строительство и инженерия под ключ. Прозрачные сроки, контроль
-                качества и сопровождение на каждом этапе.
-              </p>
-              <div className="hero-actions reveal" data-delay="3">
-                <Button size="lg" type="button" onClick={() => setIsCalculatorOpen(true)}>
-                  Расчет стоимости
-                </Button>
-                <a className="btn btn-outline btn-lg" href="/#projects">
-                  Смотреть проекты
-                </a>
-              </div>
-              <div className="hero-stats">
-                <div className="stat-card">
-                  <strong>8 лет</strong>
-                  <span className="muted">опыта в строительстве</span>
-                </div>
-                <div className="stat-card">
-                  <strong>76 домов</strong>
-                  <span className="muted">сданы под ключ</span>
-                </div>
-                <div className="stat-card">
-                  <strong>От 6%</strong>
-                  <span className="muted">для семей с детьми</span>
-                </div>
-              </div>
-            </div>
-            <div className="hero-visual">
-              <div className="hero-image">
-                <img src="/images/project-aurora.svg" alt="Фасад современного дома" />
-              </div>
-              <div className="hero-panel">
-                <div className="stack">
-                  <span className="badge">Проверенный подход</span>
-                  <div>
-                    <strong>Прозрачная смета</strong>
-                    <p className="muted">
-                      Фиксируем стоимость по этапам и сразу показываем финальную сумму.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Container>
-      </Section>
+      <HeroSection onOpenCalculator={() => setIsCalculatorOpen(true)} />
 
       <Section id="about">
         <Container>
@@ -246,59 +289,9 @@ const Home = () => {
         </Container>
       </Section>
 
-      <Section id="services" tone="toned">
-        <Container>
-          <div className="stack" style={{ gap: 'var(--space-6)' }}>
-            <div className="stack">
-              <span className="eyebrow">Услуги</span>
-              <h2 className="h2">Закрываем полный цикл строительства</h2>
-            </div>
-            <div className="services-grid">
-              {services.map((service) => (
-                <Card key={service.title} className="service-card">
-                  <strong>{service.title}</strong>
-                  <span className="muted">{service.text}</span>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </Container>
-      </Section>
+      <ServicesSection services={services} />
 
-      <Section id="gallery" tone="toned">
-        <Container>
-          <div className="stack" style={{ gap: 'var(--space-6)' }}>
-            <div className="stack">
-              <span className="eyebrow">Построено нами</span>
-              <h2 className="h2">Реализованные объекты в Калининградской области</h2>
-            </div>
-            <div className="gallery-grid">
-              {galleryItems.map((item) => (
-                <button
-                  key={item.id}
-                  className="gallery-card"
-                  type="button"
-                  onClick={() => openGallery(item)}
-                  aria-label={`Открыть галерею проекта ${item.title}`}
-                >
-                  <div className="gallery-media">
-                    <img src={item.cover.src} alt={item.cover.alt} loading="lazy" />
-                    <div className="gallery-overlay">
-                      <span>Смотреть фото</span>
-                      <span>{item.photos.length} фото</span>
-                    </div>
-                  </div>
-                  <div className="gallery-body">
-                    <span className="gallery-location">{item.location}</span>
-                    <h3 className="gallery-title">{item.title}</h3>
-                    <p className="gallery-description">{item.description}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </Container>
-      </Section>
+      <GallerySection items={galleryItems} onOpenGallery={openGallery} />
 
       <Section id="process">
         <Container>
@@ -320,97 +313,14 @@ const Home = () => {
         </Container>
       </Section>
 
-      <Section id="projects" tone="toned">
-        <Container>
-          <div className="project-section">
-            <div className="stack">
-              <span className="eyebrow">Каталог проектов</span>
-              <h2 className="h2">Выберите проект, который можно адаптировать под ваш участок</h2>
-              <p className="muted">
-                Фильтруйте проекты по параметрам и откройте детальную информацию с планировками.
-              </p>
-            </div>
-            <div className="filter-bar">
-              <label className="field">
-                <span>Площадь, от м²</span>
-                <input
-                  className="input"
-                  type="number"
-                  min={60}
-                  value={filters.area}
-                  onChange={(event) => setFilters({ ...filters, area: event.target.value })}
-                  placeholder="120"
-                />
-              </label>
-              <label className="field">
-                <span>Этажность</span>
-                <select
-                  className="select"
-                  value={filters.floors}
-                  onChange={(event) => setFilters({ ...filters, floors: event.target.value })}
-                >
-                  <option value="any">Любая</option>
-                  <option value="1">1 этаж</option>
-                  <option value="2">2 этажа</option>
-                </select>
-              </label>
-              <label className="field">
-                <span>Бюджет, от млн ₽</span>
-                <input
-                  className="input"
-                  type="number"
-                  min={4}
-                  step={0.1}
-                  value={filters.budget}
-                  onChange={(event) => setFilters({ ...filters, budget: event.target.value })}
-                  placeholder="7.0"
-                />
-              </label>
-              <label className="field">
-                <span>Спальни, от</span>
-                <input
-                  className="input"
-                  type="number"
-                  min={2}
-                  value={filters.bedrooms}
-                  onChange={(event) => setFilters({ ...filters, bedrooms: event.target.value })}
-                  placeholder="3"
-                />
-              </label>
-            </div>
-            <div className="project-grid">
-              {filteredProjects.map((project) => (
-                <Card key={project.id} className="project-card">
-                  <img src={project.image.src} alt={project.image.alt} loading="lazy" />
-                  <div className="stack" style={{ gap: 'var(--space-2)' }}>
-                    <strong>{project.name}</strong>
-                    <span className="muted">{project.highlight}</span>
-                    <div className="project-meta">
-                      <span className="tag">{formatArea(project.area)}</span>
-                      <span className="tag">{project.floors} этажа</span>
-                      <span className="tag">{project.bedrooms} спальни</span>
-                    </div>
-                    <div className="project-specs">
-                      <span>Материал: {project.material}</span>
-                      <span>Срок: {project.duration}</span>
-                      <span>Стоимость: {formatPrice(project.priceFrom)}</span>
-                      <span>Комнат: {project.rooms}</span>
-                    </div>
-                  </div>
-                  <Button variant="outline" onClick={() => setActiveProject(project)}>
-                    Подробнее о проекте
-                  </Button>
-                </Card>
-              ))}
-            </div>
-            {filteredProjects.length === 0 && (
-              <Card>
-                <p className="muted">Нет проектов с выбранными параметрами. Попробуйте изменить фильтры.</p>
-              </Card>
-            )}
-          </div>
-        </Container>
-      </Section>
+      {SHOW_PROJECTS && (
+        <ProjectsSection
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          projects={filteredProjects}
+          onOpenProject={setActiveProject}
+        />
+      )}
 
       <Section id="consultation">
         <Container>
@@ -440,49 +350,7 @@ const Home = () => {
         </Container>
       </Section>
 
-      <Section id="contacts">
-        <Container>
-          <div className="contact-grid">
-            <Card className="contact-card">
-              <span className="eyebrow">Контакты</span>
-              <h2 className="h2">Свяжитесь с нами удобным способом</h2>
-              <div className="stack">
-                <div>
-                  <strong>Телефон</strong>
-                  <div>
-                    <a href="tel:+79244422800">+7 924 442-28-00</a>
-                  </div>
-                </div>
-                <div>
-                  <strong>Email</strong>
-                  <div>
-                    <a href="mailto:bon2801@yandex.ru">bon2801@yandex.ru</a>
-                  </div>
-                </div>
-                <div>
-                  <strong>Мессенджеры</strong>
-                  <div className="hero-actions">
-                    <a className="btn btn-outline btn-sm" href="https://t.me/o781781">
-                      Telegram
-                    </a>
-                    <a className="btn btn-outline btn-sm" href="https://wa.me/79244422800">
-                      WhatsApp
-                    </a>
-                  </div>
-                </div>
-                <div>
-                  <strong>Адрес</strong>
-                  <div>Калининград, ул. Третьяковская 2, офис 209</div>
-                </div>
-                <Badge>Работаем пн-сб с 9:00 до 19:00</Badge>
-              </div>
-            </Card>
-            <div className="map-frame">
-              <div className="map-widget" ref={mapContainerRef} />
-            </div>
-          </div>
-        </Container>
-      </Section>
+      <ContactsSection mapContainerRef={mapContainerRef} />
 
       <Modal
         isOpen={isCalculatorOpen}
@@ -513,7 +381,9 @@ const Home = () => {
           </div>
         }
       >
-        <CostCalculator />
+        <Suspense fallback={<div className="muted">Загружаем…</div>}>
+          <CostCalculator />
+        </Suspense>
       </Modal>
 
       <Modal
@@ -571,7 +441,14 @@ const Home = () => {
               <strong>Галерея</strong>
               <div className="project-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
                 {activeProject.gallery.map((image) => (
-                  <img key={image.src} src={image.src} alt={image.alt} loading="lazy" />
+                  <img
+                    key={image.src}
+                    src={image.src}
+                    alt={image.alt}
+                    loading="lazy"
+                    width={1200}
+                    height={900}
+                  />
                 ))}
               </div>
             </div>
@@ -579,7 +456,14 @@ const Home = () => {
               <strong>Планировки</strong>
               <div className="project-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
                 {activeProject.plans.map((image) => (
-                  <img key={image.src} src={image.src} alt={image.alt} loading="lazy" />
+                  <img
+                    key={image.src}
+                    src={image.src}
+                    alt={image.alt}
+                    loading="lazy"
+                    width={1200}
+                    height={900}
+                  />
                 ))}
               </div>
             </div>
@@ -616,8 +500,19 @@ const Home = () => {
       >
         {activeGallery && activeGalleryPhoto && (
           <div className="gallery-modal">
-            <div className="gallery-main">
+            <div className="gallery-main" ref={galleryMainRef}>
               <img src={activeGalleryPhoto.src} alt={activeGalleryPhoto.alt} />
+              <button
+                className="gallery-fullscreen"
+                type="button"
+                onClick={toggleGalleryFullscreen}
+                aria-pressed={isGalleryFullscreen}
+                aria-label={
+                  isGalleryFullscreen ? 'Свернуть изображение' : 'Открыть изображение на весь экран'
+                }
+              >
+                {isGalleryFullscreen ? 'Свернуть' : 'На весь экран'}
+              </button>
               <button
                 className="gallery-nav gallery-nav-prev"
                 type="button"

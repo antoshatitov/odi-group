@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import type { FormEvent } from 'react'
 
@@ -13,6 +13,7 @@ type LeadFormProps = {
 }
 
 const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
+const phonePattern = /^[0-9+()\s-]{7,20}$/
 
 const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
   const [name, setName] = useState('')
@@ -22,6 +23,11 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
   const [honeypot, setHoneypot] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const nameRef = useRef<HTMLInputElement | null>(null)
+  const phoneRef = useRef<HTMLInputElement | null>(null)
+  const messageRef = useRef<HTMLTextAreaElement | null>(null)
+  const consentRef = useRef<HTMLInputElement | null>(null)
 
   const reset = () => {
     setName('')
@@ -29,15 +35,50 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
     setMessage('')
     setConsent(false)
     setHoneypot('')
+    setFieldErrors({})
+  }
+
+  const focusFirstError = (nextErrors: Record<string, string>) => {
+    if (nextErrors.name) {
+      nameRef.current?.focus()
+      return
+    }
+    if (nextErrors.phone) {
+      phoneRef.current?.focus()
+      return
+    }
+    if (nextErrors.message) {
+      messageRef.current?.focus()
+      return
+    }
+    if (nextErrors.consent) {
+      consentRef.current?.focus()
+    }
+  }
+
+  const validate = () => {
+    const nextErrors: Record<string, string> = {}
+    if (name.trim().length < 2) {
+      nextErrors.name = 'Укажите имя и фамилию.'
+    }
+    if (!phonePattern.test(phone.trim())) {
+      nextErrors.phone = 'Введите корректный номер телефона.'
+    }
+    if (!consent) {
+      nextErrors.consent = 'Подтвердите согласие на обработку персональных данных.'
+    }
+    setFieldErrors(nextErrors)
+    return nextErrors
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
+    setStatus('idle')
 
-    if (!consent) {
-      setError('Подтвердите согласие на обработку персональных данных.')
-      setStatus('error')
+    const nextErrors = validate()
+    if (Object.keys(nextErrors).length > 0) {
+      focusFirstError(nextErrors)
       return
     }
 
@@ -78,8 +119,14 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
         name="name"
         required
         value={name}
-        onChange={(event) => setName(event.target.value)}
-        placeholder="Как к вам обращаться"
+        onChange={(event) => {
+          setName(event.target.value)
+          setFieldErrors((current) => ({ ...current, name: '' }))
+        }}
+        placeholder="Как к вам обращаться…"
+        autoComplete="name"
+        error={fieldErrors.name}
+        ref={nameRef}
       />
       <Input
         label="Телефон"
@@ -87,16 +134,26 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
         type="tel"
         required
         value={phone}
-        onChange={(event) => setPhone(event.target.value)}
+        onChange={(event) => {
+          setPhone(event.target.value)
+          setFieldErrors((current) => ({ ...current, phone: '' }))
+        }}
         placeholder="+7 (___) ___-__-__"
-        pattern="[0-9+()\s-]{7,20}"
+        pattern="[0-9+()\\s-]{7,20}"
+        autoComplete="tel"
+        error={fieldErrors.phone}
+        ref={phoneRef}
       />
       <TextArea
         label="Комментарий"
         name="message"
         value={message}
-        onChange={(event) => setMessage(event.target.value)}
-        placeholder="Коротко опишите задачу или пожелания"
+        onChange={(event) => {
+          setMessage(event.target.value)
+          setFieldErrors((current) => ({ ...current, message: '' }))
+        }}
+        placeholder="Коротко опишите задачу или пожелания…"
+        ref={messageRef}
       />
       <label className="field" style={{ display: 'none' }} aria-hidden="true">
         <span>Website</span>
@@ -109,21 +166,28 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
           onChange={(event) => setHoneypot(event.target.value)}
         />
       </label>
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={consent}
-          onChange={(event) => setConsent(event.target.checked)}
-          required
-        />
-        <span>
-          Я соглашаюсь с{' '}
-          <a href="/consent" className="chip" target="_blank" rel="noreferrer">
-            условиями обработки персональных данных
-          </a>
-          .
-        </span>
-      </label>
+      <div className="field">
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(event) => {
+              setConsent(event.target.checked)
+              setFieldErrors((current) => ({ ...current, consent: '' }))
+            }}
+            required
+            ref={consentRef}
+          />
+          <span>
+            Я соглашаюсь с{' '}
+            <a href="/consent" className="chip" target="_blank" rel="noreferrer">
+              условиями обработки персональных данных
+            </a>
+            .
+          </span>
+        </label>
+        {fieldErrors.consent && <span className="field-error">{fieldErrors.consent}</span>}
+      </div>
       {status === 'success' && (
         <div className="badge" role="status">
           Спасибо! Мы свяжемся с вами в ближайшее время.
@@ -139,7 +203,7 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
         </div>
       )}
       <Button type="submit" disabled={status === 'loading'}>
-        {status === 'loading' ? 'Отправляем...' : 'Отправить заявку'}
+        {status === 'loading' ? 'Отправляем…' : 'Отправить заявку'}
       </Button>
     </form>
   )
