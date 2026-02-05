@@ -58,17 +58,6 @@ const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
                 fetchPriority="high"
               />
             </div>
-            <div className="hero-panel">
-              <div className="stack">
-                <span className="badge">Проверенный подход</span>
-                <div>
-                  <strong>Прозрачная смета</strong>
-                  <p className="muted">
-                    Фиксируем стоимость по этапам и сразу показываем финальную сумму.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </Container>

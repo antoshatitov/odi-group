@@ -39,8 +39,12 @@ const SiteHeader = () => {
           ))}
         </nav>
         <div className="header-actions">
-          <a className="btn btn-outline btn-sm" href="tel:+79244422800">
-            +7 924 442-28-00
+          <a
+            className="btn btn-outline btn-sm header-phone"
+            href="tel:+79244422800"
+            aria-label="Позвонить"
+          >
+            <span className="header-phone-text">+7 924 442-28-00</span>
           </a>
           <a className="btn btn-primary btn-sm" href="/#consultation">
             Получить консультацию

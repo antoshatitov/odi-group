@@ -76,6 +76,14 @@
   gap: var(--space-3);
 }
 
+.header-phone {
+  position: relative;
+}
+
+.header-phone-text {
+  display: inline;
+}
+
 .menu-toggle {
   display: none;
 }
@@ -184,6 +192,7 @@
   position: relative;
   display: grid;
   gap: var(--space-4);
+  transform: translateY(calc(-1 * var(--space-8)));
 }
 
 .hero-image {
@@ -218,6 +227,10 @@
   grid-template-columns: 1.1fr 0.9fr;
   gap: var(--space-7);
   align-items: start;
+}
+
+.about-grid .lead {
+  max-width: 65ch;
 }
 
 .about-list {
@@ -613,6 +626,10 @@
     max-width: none;
   }
 
+  .hero-visual {
+    transform: none;
+  }
+
   .project-grid,
   .gallery-grid,
   .services-grid,
@@ -653,6 +670,33 @@
     display: none;
   }
 
+  .header-actions a.header-phone {
+    display: inline-flex;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .header-phone::before {
+    content: '☎';
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .header-phone-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .hero-actions {
     flex-direction: column;
     align-items: stretch;
@@ -676,6 +720,22 @@
 
   .gallery-main {
     min-height: 240px;
+  }
+
+  .gallery-media::after {
+    content: '↗';
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: rgba(12, 15, 14, 0.6);
+    color: #f8f6f1;
+    font-size: 1rem;
+    pointer-events: none;
   }
 
   .map-frame {
