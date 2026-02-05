@@ -13,5 +13,8 @@
     "preview:web": "npm --workspace apps/web run preview",
     "dev:server": "npm --workspace apps/server run dev",
     "start:server": "npm --workspace apps/server run start"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.1"
   }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import Button from './Button'
+import { SHOW_PROJECTS } from '../config/featureFlags'
 
 const navLinks = [
   { label: 'О компании', href: '/#about' },
@@ -12,6 +13,9 @@ const navLinks = [
 
 const SiteHeader = () => {
   const [open, setOpen] = useState(false)
+  const visibleLinks = SHOW_PROJECTS
+    ? navLinks
+    : navLinks.filter((link) => link.href !== '/#projects')
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -24,19 +28,23 @@ const SiteHeader = () => {
     <header className="site-header">
       <div className="container header-inner">
         <a className="logo" href="/">
-          <img src="/images/logo.png" alt="ОДИ" />
+          <img src="/images/logo.png" alt="ОДИ" width={1000} height={1000} />
           <small>строительная компания</small>
         </a>
         <nav className="nav-links" aria-label="Основная навигация">
-          {navLinks.map((link) => (
+          {visibleLinks.map((link) => (
             <a key={link.href} href={link.href} className="nav-link">
               {link.label}
             </a>
           ))}
         </nav>
         <div className="header-actions">
-          <a className="btn btn-outline btn-sm" href="tel:+79244422800">
-            +7 924 442-28-00
+          <a
+            className="btn btn-outline btn-sm header-phone"
+            href="tel:+79244422800"
+            aria-label="Позвонить"
+          >
+            <span className="header-phone-text">+7 924 442-28-00</span>
           </a>
           <a className="btn btn-primary btn-sm" href="/#consultation">
             Получить консультацию
@@ -57,7 +65,7 @@ const SiteHeader = () => {
           <div className="mobile-nav-panel">
             <div className="mobile-nav-header">
               <a className="logo" href="/" onClick={() => setOpen(false)}>
-                <img src="/images/logo.png" alt="ОДИ" />
+                <img src="/images/logo.png" alt="ОДИ" width={1000} height={1000} />
                 <small>строительная компания</small>
               </a>
               <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
@@ -65,7 +73,7 @@ const SiteHeader = () => {
               </Button>
             </div>
             <div className="mobile-nav-links">
-              {navLinks.map((link) => (
+              {visibleLinks.map((link) => (
                 <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
                   {link.label}
                 </a>

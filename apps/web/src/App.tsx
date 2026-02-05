@@ -22,8 +22,11 @@ const App = () => {
   return (
     <div>
       <ScrollToTop />
+      <a className="skip-link" href="#main-content">
+        Перейти к основному содержанию
+      </a>
       <SiteHeader />
-      <main>
+      <main id="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/policy" element={<Policy />} />

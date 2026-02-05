@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import type { FormEvent } from 'react'
 
@@ -12,6 +12,7 @@ const LOCAL_LIMIT_WINDOW_MS = 2 * 60 * 1000
 const LOCAL_LIMIT_MAX = 2
 const SOFT_DELAY_MS = 300
 const FAST_SUBMIT_MS = 4000
+const phonePattern = /^[0-9+()\s-]{7,20}$/
 
 const readLocalAttempts = () => {
   if (typeof window === 'undefined') return []
@@ -79,9 +80,16 @@ const CostCalculator = () => {
   const [honeypot, setHoneypot] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [estimate, setEstimate] = useState('')
   const [activeInfo, setActiveInfo] = useState<string | null>(null)
   const [openedAt] = useState(() => Date.now())
+  const floorsRef = useRef<HTMLSelectElement | null>(null)
+  const areaRef = useRef<HTMLInputElement | null>(null)
+  const packageRef = useRef<HTMLInputElement | null>(null)
+  const nameRef = useRef<HTMLInputElement | null>(null)
+  const phoneRef = useRef<HTMLInputElement | null>(null)
+  const consentRef = useRef<HTMLInputElement | null>(null)
 
   const resetResult = () => {
     if (estimate) setEstimate('')
@@ -99,45 +107,80 @@ const CostCalculator = () => {
     setHoneypot('')
     setStatus('idle')
     setError('')
+    setFieldErrors({})
     setEstimate('')
     setActiveInfo(null)
+  }
+
+  const focusFirstError = (nextErrors: Record<string, string>) => {
+    if (nextErrors.floors) {
+      floorsRef.current?.focus()
+      return
+    }
+    if (nextErrors.area) {
+      areaRef.current?.focus()
+      return
+    }
+    if (nextErrors.packageType) {
+      packageRef.current?.focus()
+      return
+    }
+    if (nextErrors.name) {
+      nameRef.current?.focus()
+      return
+    }
+    if (nextErrors.phone) {
+      phoneRef.current?.focus()
+      return
+    }
+    if (nextErrors.consent) {
+      consentRef.current?.focus()
+    }
+  }
+
+  const validate = () => {
+    const nextErrors: Record<string, string> = {}
+    if (!floors) {
+      nextErrors.floors = 'Выберите этажность дома.'
+    }
+
+    const areaValue = Number(area)
+    if (!Number.isFinite(areaValue) || areaValue <= 0) {
+      nextErrors.area = 'Введите площадь дома в м².'
+    }
+
+    if (!packageType) {
+      nextErrors.packageType = 'Выберите комплектацию строительства.'
+    }
+
+    if (name.trim().length < 2) {
+      nextErrors.name = 'Введите имя и фамилию.'
+    }
+
+    if (!phonePattern.test(phone.trim())) {
+      nextErrors.phone = 'Введите корректный номер телефона.'
+    }
+
+    if (!consent) {
+      nextErrors.consent = 'Подтвердите согласие на обработку персональных данных.'
+    }
+
+    setFieldErrors(nextErrors)
+    return nextErrors
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
+    setStatus('idle')
 
-    if (!consent) {
-      setError('Подтвердите согласие на обработку персональных данных.')
-      setStatus('error')
-      return
-    }
-
-    if (!floors) {
-      setError('Выберите этажность дома.')
-      setStatus('error')
-      return
-    }
-
-    if (!packageType) {
-      setError('Выберите комплектацию строительства.')
-      setStatus('error')
+    const nextErrors = validate()
+    if (Object.keys(nextErrors).length > 0) {
+      focusFirstError(nextErrors)
       return
     }
 
     const areaValue = Number(area)
-    if (!Number.isFinite(areaValue) || areaValue <= 0) {
-      setError('Введите площадь дома в м².')
-      setStatus('error')
-      return
-    }
-
-    if (name.trim().length < 2) {
-      setError('Введите имя и фамилию.')
-      setStatus('error')
-      return
-    }
-
     const attemptTime = Date.now()
     const recentAttempts = getRecentAttempts(attemptTime)
     if (recentAttempts.length >= LOCAL_LIMIT_MAX) {
@@ -210,9 +253,14 @@ const CostCalculator = () => {
               className="select"
               value={floors}
               required
+              name="floors"
+              ref={floorsRef}
+              aria-invalid={Boolean(fieldErrors.floors)}
+              aria-describedby={fieldErrors.floors ? 'floors-error' : undefined}
               onChange={(event) => {
                 setFloors(event.target.value)
                 resetResult()
+                setFieldErrors((current) => ({ ...current, floors: '' }))
               }}
             >
               <option value="" disabled>
@@ -221,6 +269,11 @@ const CostCalculator = () => {
               <option value="1">1 этаж</option>
               <option value="2">2 этажа</option>
             </select>
+            {fieldErrors.floors && (
+              <span className="field-error" id="floors-error" role="alert">
+                {fieldErrors.floors}
+              </span>
+            )}
           </label>
           <label className="field">
             <span>Площадь дома</span>
@@ -232,23 +285,36 @@ const CostCalculator = () => {
                 step={1}
                 inputMode="numeric"
                 value={area}
+                name="area"
+                ref={areaRef}
+                aria-invalid={Boolean(fieldErrors.area)}
+                aria-describedby={fieldErrors.area ? 'area-error' : undefined}
                 onChange={(event) => {
                   setArea(event.target.value)
                   resetResult()
+                  setFieldErrors((current) => ({ ...current, area: '' }))
                 }}
                 placeholder="100"
                 required
               />
               <span className="input-suffix-text">м²</span>
             </div>
+            {fieldErrors.area && (
+              <span className="field-error" id="area-error" role="alert">
+                {fieldErrors.area}
+              </span>
+            )}
           </label>
         </div>
 
-        <div className="stack" style={{ gap: 'var(--space-3)' }}>
-          <div className="field">
-            <span>Комплектация</span>
-          </div>
-          <div className="calculator-options">
+        <div className="field" style={{ gap: 'var(--space-3)' }}>
+          <span>Комплектация</span>
+          <div
+            className="calculator-options"
+            role="radiogroup"
+            aria-invalid={Boolean(fieldErrors.packageType)}
+            aria-describedby={fieldErrors.packageType ? 'package-type-error' : undefined}
+          >
             {packageOptions.map((option, index) => {
               const isActive = packageType === option.value
               const isInfoOpen = activeInfo === option.value
@@ -261,9 +327,11 @@ const CostCalculator = () => {
                       value={option.value}
                       checked={isActive}
                       required={index === 0}
+                      ref={index === 0 ? packageRef : undefined}
                       onChange={(event) => {
                         setPackageType(event.target.value)
                         resetResult()
+                        setFieldErrors((current) => ({ ...current, packageType: '' }))
                       }}
                     />
                     <span>{option.label}</span>
@@ -284,6 +352,11 @@ const CostCalculator = () => {
               )
             })}
           </div>
+          {fieldErrors.packageType && (
+            <span className="field-error" id="package-type-error" role="alert">
+              {fieldErrors.packageType}
+            </span>
+          )}
         </div>
 
         <Input
@@ -294,8 +367,12 @@ const CostCalculator = () => {
           onChange={(event) => {
             setName(event.target.value)
             resetResult()
+            setFieldErrors((current) => ({ ...current, name: '' }))
           }}
-          placeholder="Например, Антон Титов"
+          placeholder="Например, Антон Титов…"
+          autoComplete="name"
+          error={fieldErrors.name}
+          ref={nameRef}
         />
         <Input
           label="Телефон"
@@ -306,9 +383,13 @@ const CostCalculator = () => {
           onChange={(event) => {
             setPhone(event.target.value)
             resetResult()
+            setFieldErrors((current) => ({ ...current, phone: '' }))
           }}
           placeholder="+7 (___) ___-__-__"
-          pattern="[0-9+() -]{7,20}"
+          pattern="[0-9+()\\s-]{7,20}"
+          autoComplete="tel"
+          error={fieldErrors.phone}
+          ref={phoneRef}
         />
 
         <label className="field" style={{ display: 'none' }} aria-hidden="true">
@@ -323,24 +404,29 @@ const CostCalculator = () => {
           />
         </label>
 
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={consent}
-            onChange={(event) => {
-              setConsent(event.target.checked)
-              resetResult()
-            }}
-            required
-          />
-          <span>
-            Я соглашаюсь с{' '}
-            <a href="/consent" className="chip" target="_blank" rel="noreferrer">
-              условиями обработки персональных данных
-            </a>
-            .
-          </span>
-        </label>
+        <div className="field">
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(event) => {
+                setConsent(event.target.checked)
+                resetResult()
+                setFieldErrors((current) => ({ ...current, consent: '' }))
+              }}
+              required
+              ref={consentRef}
+            />
+            <span>
+              Я соглашаюсь с{' '}
+              <a href="/consent" className="chip" target="_blank" rel="noreferrer">
+                условиями обработки персональных данных
+              </a>
+              .
+            </span>
+          </label>
+          {fieldErrors.consent && <span className="field-error">{fieldErrors.consent}</span>}
+        </div>
 
         {status === 'error' && error && (
           <div className="calculator-alert calculator-alert-error" role="alert">
@@ -350,7 +436,7 @@ const CostCalculator = () => {
 
         <div className="calculator-actions">
           <Button type="submit" disabled={status === 'loading'}>
-            {status === 'loading' ? 'Считаем...' : 'Расчет стоимости'}
+            {status === 'loading' ? 'Считаем…' : 'Расчет стоимости'}
           </Button>
           <Button type="button" variant="outline" onClick={resetForm}>
             Сбросить
