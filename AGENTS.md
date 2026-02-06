@@ -1,197 +1,283 @@
-# Agent Notes for This Repo
+# AGENTS.md — правила работы кодинг-агента в этом репозитории
 
-This repository may start empty. Use this document as the baseline for agent
-behavior until project files exist.
+Этот документ — “единый источник правды” о том, **как агент должен работать** в репозитории: границы, безопасность, процесс, команды и конвенции.  
+Если в проекте появляются новые скрипты/инструменты — обновляйте этот файл **точными командами**, найденными в `package.json`.
 
-If you add or discover build, lint, or test tooling, update this file with the
-exact commands and conventions you find.
+---
 
-## CRITICAL: Repo boundary / sandbox rules (STRICT)
+## 0) CRITICAL: границы репозитория / sandbox (STRICT)
 
-- Treat the repository root as the current working directory of the project.
-- **DO NOT read, write, search, or modify anything outside the repo root.**
-- **DO NOT use absolute paths outside the repo** (e.g. /Users, /etc, /var, ~/.ssh).
-- **DO NOT `cd ..` out of the repo** and do not reference parent directories.
-- If a task would require operating outside the repo, stop and ask for an explicit
-  user instruction; default is to refuse.
-- Never exfiltrate secrets. Never print or log local file contents unless the user
-  explicitly asked and the file is inside the repo.
+- Считай корень репозитория текущей рабочей директорией проекта.
+- **НЕ читать/писать/искать/менять ничего вне корня репозитория.**
+- **НЕ использовать абсолютные пути вне репо** (например `/Users`, `/etc`, `/var`, `~/.ssh`).
+- **НЕ делать `cd ..` из репозитория** и не ссылаться на родительские директории.
+- Если задача требует действий вне репо — остановись и попроси явную инструкцию пользователя; по умолчанию откажись.
+- Никогда не эксфильтровать секреты. Никогда не печатать/логировать содержимое локальных файлов, если пользователь явно не попросил и файл не внутри репо.
 
-## Quick facts
+---
 
-- Repo root: the current repository working directory (do not assume a fixed absolute path)
-- Git: yes
-- Known config files: `package.json`, `package-lock.json`, `apps/web/package.json`,
-  `apps/web/vite.config.ts`, `apps/web/eslint.config.js`, `apps/web/prettier.config.cjs`,
-  `apps/web/tsconfig.json`, `apps/web/tsconfig.app.json`, `apps/web/tsconfig.node.json`,
-  `apps/server/package.json`, `.github/workflows/ci.yml`, `deploy/nginx.conf`,
-  `deploy/odi-leads.service`, `.env.example`
+## 1) Что это за проект (контекст)
 
-## Tech stack
+Корпоративный сайт строительной компании «ОДИ» (Калининград и область), это подтверждено в `README.md`.
 
-- Frontend: React 18, Vite 6, TypeScript, React Router
-- Backend: Node.js 20+, Fastify 5
-- Deploy: Nginx, systemd
+### Функциональность фронтенда
+Лендинг с секциями про компанию, услуги, процесс, каталог проектов с фильтрами, галерея реализованных объектов, контакты и карта.  
+Есть модальные окна деталей проекта/галереи, формы заявок и калькулятор стоимости (см. `apps/web/src/pages/Home.tsx`, `apps/web/src/components`).
 
-## Playwright MCP (ALLOWED)
+### Функциональность бэкенда
+API:
+- `POST /api/lead` — заявки
+- `POST /api/cost-estimate` — расчёт стоимости
+- `GET  /api/health` — healthcheck
 
-Playwright MCP is explicitly allowed for UI checks and exploratory testing.
+Отправка сообщений в Telegram. Антиспам: honeypot, rate-limit, дедупликация, опциональная CAPTCHA (см. серверный `index.js` и связанные модули).
 
-Allowed usage:
-- Open pages in a browser to review layout, responsiveness, visual regressions.
-- Take screenshots, inspect DOM, verify interactions.
-- Use for the reference sites and the developed site when needed.
+---
 
-Safety constraints:
-- **Read-only browsing only**: do not submit forms that trigger real actions, do not
-  purchase, do not download executables, do not change account settings.
-- **Never enter credentials**, tokens, or personal data into any website.
-- If the Playwright MCP server supports an allowlist (e.g., `--allowed-hosts`),
-  restrict hosts to only what is needed for the task.
+## 2) Структура и стек
 
-## Build, lint, and test commands
+### Monorepo
+- npm workspaces
+- корневые скрипты в `package.json`
 
-Tooling detected:
+### Frontend
+- React 18, Vite 6, TypeScript, React Router
+- код: `apps/web/src`
+- данные проектов/галереи: `apps/web/src/data`
+- стили: `apps/web/src/index.css`
 
-- Install dependencies: `npm install`
+### Backend
+- Node.js 20+ (ESM), Fastify 5
+- `@fastify/cors`, `@fastify/helmet`, `@fastify/rate-limit`
+- вход: `index.js` (или серверный пакет, если он вынесен в `apps/server` — ориентируйся по файлам в репо)
+
+### Deploy
+- Nginx и systemd конфиги: `deploy/`
+- переменные окружения: `.env.example`
+
+---
+
+## 3) Skills (инструкции для агента)
+
+В репозитории используются skills, лежат в `skills/`.
+
+Правило:
+- Если задача относится к области, покрытой skill — открой и следуй инструкциям из `skills/<skill-name>/SKILL.md`.
+- Не выдумывай поведение skill и не подменяй его правила своими.
+
+Карта применения (ориентир):
+- `playwright` — проверка UI/регрессии, скриншоты, сценарии через Playwright MCP.
+- `audit-website` — аудит сайта: UX, доступность, производительность, SEO-поведение, находки и рекомендации.
+- `frontend-design`, `visual-design-foundations`, `web-design-guidelines` — визуальная система, композиция, типографика, сетка, эстетика.
+- `frontend-responsive-ui` — адаптивность, брейкпоинты, мобильные паттерны.
+- `composition-patterns` — композиция компонентов, декомпозиция, паттерны структурирования.
+- `react-best-practices`, `vercel-react-best-practices` — практики React, производительность, архитектура.
+- `read-github` — чтение репо/пулл-реквестов/issue контекста.
+- `openai-docs-skill` — обращение к документации OpenAI (если задача про OpenAI API/продукты).
+
+Обновление:
+- Не обновляй этот раздел только из-за “обнаружения” нового skill.
+- Если в PR добавляются/удаляются skills (меняется папка `skills/`) — обнови карту применения в этом разделе в рамках того же PR.
+
+---
+
+## 4) Playwright MCP (ALLOWED) — для UI-проверок
+
+Playwright MCP разрешён для UI checks и исследовательского тестирования.
+
+Разрешено:
+- открывать страницы и проверять layout/адаптив/визуальные регрессии
+- скриншоты, DOM inspection, проверка интеракций (модалки, фильтры, навигация)
+- использовать как для текущего сайта в dev, так и для референсов (если нужно)
+
+Ограничения безопасности:
+- **Только read-only browsing**: не совершать покупок/скачиваний исполняемых файлов/изменений аккаунтов.
+- **Никогда не вводить креды/токены/персональные данные** на любых сайтах.
+- **Не отправлять формы**, которые могут триггерить реальные действия (заявка/Telegram) — если задача не требует этого явно.
+  - Для проверок предпочтительно: UI-валидация, мок/локальный режим, тестовый эндпоинт/флаг (если предусмотрен).
+- Если в MCP есть allowlist хостов (например `--allowed-hosts`) — ограничь только нужными хостами.
+
+---
+
+## 5) Команды сборки/линта/дев-режима (используй реальные скрипты)
+
+Инструменты: ESLint, Prettier, TypeScript, `@vitejs/plugin-react`.
+
+### Основные команды (актуализируй по `package.json`)
+- Установка зависимостей: `npm install`
+- Dev (frontend): `npm run dev:web`
 - Build (frontend): `npm run build:web`
 - Lint (frontend): `npm run lint:web`
 - Format (frontend): `npm run format:web`
-- Dev (frontend): `npm run dev:web`
 - Preview (frontend): `npm run preview:web`
-- Dev (server): `npm run dev:server`
-- Start (server): `npm run start:server`
-- Test (all): not configured
-- Test (single): not configured
+- Dev (server): `npm run dev:server` (если присутствует)
+- Start (server): `npm run start:server` (если присутствует)
+- Tests: если не настроены — так и писать, не выдумывать.
 
-When tooling is added, list commands here in this format:
+Правило: **не придумывай команды**. Если не уверен — проверь `package.json` и используй только существующие скрипты.
 
-- Install dependencies: `...`
-- Build: `...`
-- Lint: `...`
-- Format: `...`
-- Test (all): `...`
-- Test (single): `...` (include the exact flag for single test)
+---
 
-Single test guidance should be explicit. For example, prefer one of:
+## 6) Рабочий процесс “1 сессия = 1 PR” (обязательный)
 
-- `pytest path/to/test_file.py::test_name`
-- `go test ./pkg -run TestName`
-- `vitest path/to/test.test.ts -t "test name"`
-- `jest path/to/file.test.ts -t "test name"`
+Любая задача выполняется в одной сессии и оформляется как один PR.  
+**Не смешивать разные темы/рефакторинги/апдейты в одном PR.**
 
-## Code style guidelines
+### Ветки и коммиты
+- Одна задача → одна ветка → один PR.
+- Коммиты небольшие, логичные. Избегай “wip” в финале (в процессе — по возможности тоже избегать).
+
+### PR-описание
+В PR описании обязательно:
+- что сделано
+- как проверить (пошагово)
+- для UI-задач: скриншоты/подтверждения через Playwright MCP (если применимо)
+
+---
+
+## 7) Протокол выполнения задачи (строго 4 фазы)
+
+Агент обязан придерживаться этого протокола на каждой задаче:
+
+### Фаза A — План (до правок)
+Сформулировать план:
+- какие файлы/модули будут затронуты
+- какие шаги будут выполнены
+- какие риски/краевые случаи проверить (особенно формы/модалки/API)
+
+### Фаза B — Изменения + подробный отчёт
+После внесения правок:
+- список изменённых файлов
+- что именно изменено и почему
+- что намеренно НЕ менялось (если рядом было “соблазнительно улучшить”)
+
+### Фаза C — Самопроверка
+Минимум:
+- `npm run dev:web` и ручная проверка сценариев
+- если есть lint/typecheck/build — прогнать релевантные команды
+- для UI-задач: подтверждение через Playwright MCP
+
+### Фаза D — Итоговый отчёт
+В конце:
+- кратко “что изменено”
+- “как проверить” (пошагово)
+- важные допущения/ограничения/известные риски
+
+---
+
+## 8) Границы и правила безопасности (проект-специфично, строго)
+
+### 8.1 Секреты, токены, персональные данные
+Запрещено:
+- коммитить реальные значения токенов/ключей/`chat_id`/CAPTCHA-ключей
+- создавать и коммитить `.env` (если пользователь явно не попросил)
+- логировать ПДн, содержимое заявок, телефоны, адреса, токены
+
+Разрешено:
+- обновлять `.env.example` (документация) и использовать плейсхолдеры вида `YOUR_TELEGRAM_TOKEN_HERE`
+
+### 8.2 API/безопасность сервера
+Запрещено без явного запроса:
+- ослаблять/отключать `@fastify/helmet`, `@fastify/rate-limit`, антиспам-механики (honeypot/дедупликация)
+- расширять CORS “всем всё можно”, если задача этого прямо не требует
+- выдавать наружу стеки/секреты в ошибках и логах
+
+Обязательно при правках API:
+- валидировать входные данные на границе (до бизнес-логики)
+- сохранять контракт эндпоинтов, если не согласовано изменение
+- не раскрывать подробные внутренние ошибки клиенту
+
+### 8.3 Deploy и инфраструктура (`deploy/`)
+Файлы `deploy/` менять **только** если задача прямо про деплой/инфраструктуру.  
+Запрещено “по пути” менять nginx/systemd, порты, users, пути, перезапуски.
+
+### 8.4 Зависимости
+Запрещено без явного запроса:
+- массово обновлять версии зависимостей
+- добавлять новую зависимость “для удобства”
+- менять `package-lock.json` без причины
+
+Если зависимость всё же нужна:
+- объяснить зачем без неё нельзя
+- выбрать минимальную альтернативу
+- зафиксировать, как это влияет на сборку/команды/безопасность
+
+### 8.5 Фронтенд-ограничения (качество продукта)
+- Не ломать ключевые секции лендинга и SEO-контент.
+- Не ухудшать доступность: корректный focus, закрытие модалок (ESC/оверлей), навигация с клавиатуры (если реализовано).
+- Не добавлять тяжёлые библиотеки ради мелких UI-эффектов.
+
+---
+
+## 9) UI regression checklist (перед завершением UI-задач)
+
+Проверить вручную (и/или через Playwright MCP):
+- лендинг грузится и секции на месте
+- каталог проектов: фильтры работают, список корректный
+- галерея: открытие/перелистывание, корректные изображения
+- модалки проекта/галереи: открытие/закрытие/скролл/ESC
+- формы заявок: валидация, состояния loading/success/error (без реальной отправки, если не нужно)
+- калькулятор стоимости: базовый сценарий ввода и расчёта
+- адаптив: mobile/tablet/desktop (минимум — ключевые брейкпоинты)
+
+---
+
+## 10) Код-стайл и конвенции
 
 ### Imports
-
-- Prefer absolute imports rooted at the project entry point.
-- Group imports by: standard library, third-party, local modules.
-- One blank line between import groups.
-- Do not use unused imports; remove them immediately.
-- Avoid wildcard imports unless the language standard requires them.
+- Предпочитай абсолютные импорты, если проект это поддерживает.
+- Группируй импорты: standard lib → third-party → local.
+- 1 пустая строка между группами.
+- Не оставляй неиспользуемые импорты.
 
 ### Formatting
+- Длина строки: до 100 символов (если инструмент не задаёт иначе).
+- Отступы: 2 пробела для JS/TS/JSON/YAML/Markdown-код-блоков.
+- Предпочитай trailing commas, где поддерживается.
+- Prettier (ориентир): `printWidth 100`, `singleQuote true`, `trailingComma all`, `semi false`.
+- Используй ESM там, где это принятая конвенция проекта (`type: module`).
 
-- Keep line length at 100 characters unless tooling enforces otherwise.
-- Use 2 spaces for indentation in JS/TS, JSON, YAML, and Markdown code blocks.
-- Use 4 spaces in Python or follow the language standard if different.
-- Prefer trailing commas where supported to minimize diff noise.
-- Use double quotes in JSON and single quotes in JS/TS unless the formatter
-  enforces double quotes.
-- Prettier config: printWidth 100, singleQuote true, trailingComma all, semi false.
-- Use ESM modules (package.json `type: module`).
+### TypeScript
+- Явные типы на границах модулей и публичных API.
+- Не использовать `any`; вместо него `unknown` + narrowing.
+- Типы держать рядом с использованием, переиспользуемые вынести аккуратно.
 
-### Types and interfaces
+### Error handling & logging
+- Guard clauses и ранние возвраты — предпочтительнее глубокой вложенности.
+- Не глотать ошибки молча.
+- Логи — только полезные, без секретов и ПДн.
 
-- Prefer explicit types at module boundaries and public APIs.
-- Use type aliases for reusable shapes and interfaces for object contracts.
-- Avoid `any`; use `unknown` and narrow with type guards.
-- Keep type definitions close to the code that uses them.
+### Документация
+- Если добавлены новые команды/переменные окружения — обновить README/`.env.example`/документацию.
 
-### Naming conventions
+---
 
-- Use clear, intention-revealing names; avoid abbreviations.
-- Variables and functions: `camelCase`.
-- Classes and types: `PascalCase`.
-- Constants: `UPPER_SNAKE_CASE` only for true constants.
-- Files: `kebab-case` or `snake_case` depending on language convention.
+## 11) Repo discovery checklist (когда появляются новые файлы/инструменты)
 
-### Error handling
+- Проверить build/test конфиги: `package.json`, `tsconfig*`, конфиги ESLint/Prettier, CI workflow.
+- Зафиксировать точные команды build/lint/format/test (в разделе 5).
+- Узнать single-test флаги, если добавятся тесты, и записать явно.
+- Зафиксировать требования к runtime/engines (Node и т.д.), если они меняются.
+- Учесть внешние сервисы/переменные окружения и описать через `.env.example`.
 
-- Prefer early returns and guard clauses to reduce nesting.
-- Throw or return explicit errors; do not swallow exceptions silently.
-- Attach enough context to errors to make debugging possible.
-- In async code, always handle promise rejections.
+---
 
-### Logging
+## 12) Workspace hygiene
 
-- Log only actionable information.
-- Avoid logging secrets or personally identifiable information.
-- Prefer structured logs when the language supports them.
+- Не удалять файлы/изменения без явного запроса.
+- Избегать разрушительных команд (`rm -rf`, дисковые операции, privilege escalation).
+- Избегать разрушительных git-команд.
+- Правки — минимальные и строго по задаче.
+- Всегда работать **внутри repo root** (см. sandbox правила).
 
-### Testing
+---
 
-- Keep tests deterministic and isolated.
-- Use descriptive test names that express behavior.
-- Arrange, Act, Assert style when applicable.
-- Avoid time-based sleeps; use fake timers or polling helpers.
+## 13) Быстрый чеклист перед “готово”
 
-### API and data handling
-
-- Validate external inputs at boundaries.
-- Normalize data shapes before core logic.
-- Keep serialization and transport-specific logic at the edge.
-
-### Documentation
-
-- Add short module-level comments only when behavior is non-obvious.
-- Prefer inline examples in tests for complex logic.
-- Update README or docs if you add new commands or environment setup.
-
-### Security and secrets
-
-- Never commit secrets or credentials.
-- When working with git, verify sensitive project info (phone numbers, addresses, names, etc.) is not exposed publicly or on github.com.
-- Use environment variables for configuration.
-- Redact sensitive data in logs and errors.
-
-## Cursor and Copilot rules
-
-No Cursor rules were found (.cursor/rules/ or .cursorrules).
-No Copilot rules were found (.github/copilot-instructions.md).
-
-If these files are added, summarize their guidance here and keep the originals.
-
-## Repo discovery checklist
-
-Use this checklist whenever new files appear in the repo:
-
-- Check for package managers or build files: `package.json`, `pyproject.toml`,
-  `go.mod`, `Cargo.toml`, `pom.xml`, `build.gradle`, `Makefile`, `justfile`.
-- Look for test frameworks or runners and record exact single-test flags.
-- Scan for lint or format configs and record commands and versions.
-- Note any runtime or engine requirements (Node, Python, Go, etc.).
-- Capture environment setup steps or required services if present.
-
-## Dependencies and tooling
-
-- Do not add dependencies without a clear requirement.
-- If a dependency is added, update this file with install/build/test commands.
-- Prefer existing tooling over introducing new tools.
-- Avoid global installs; use project-local tooling when available.
-
-## Workspace hygiene
-
-- Do not delete user files or changes without explicit request.
-- Avoid running destructive commands (`rm -rf`, disk operations, privilege escalation).
-- Avoid running destructive git commands.
-- Keep edits minimal and focused on the task.
-- Always operate **inside the repo root** (see sandbox rules above).
-
-## Change checklist for agents
-
-- Confirm there is still no tooling config before adding commands.
-- Prefer incremental edits with minimal scope.
-- Preserve existing formatting and naming if files are added later.
-- Avoid introducing dependencies without documenting them.
-- Update this file after adding any new tooling or standards.
+- [ ] План опубликован до изменений
+- [ ] Изменения минимальны и по задаче (не смешано несколько тем)
+- [ ] Нет секретов/ключей/ПДн в коде и логах
+- [ ] `npm run dev:web` запускается, базовые сценарии работают
+- [ ] Если есть lint/typecheck/build — релевантные проверки пройдены
+- [ ] Для UI-задач выполнен UI regression checklist + при необходимости Playwright MCP
+- [ ] Итоговый отчёт: “что изменено и как проверить” готов
