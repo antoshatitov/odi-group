@@ -70,7 +70,7 @@ sudo mkdir -p /var/www/odi/web /var/www/odi/server
 3) Создайте `.env` для сервера:
 
 ```bash
-sudo cp /var/www/odi/server/.env.example /var/www/odi/server/.env
+sudo cp ./.env.example /var/www/odi/server/.env
 sudo nano /var/www/odi/server/.env
 ```
 
@@ -95,8 +95,40 @@ sudo systemctl reload nginx
 
 ```bash
 sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d odi-kaliningrad.ru -d www.odi-kaliningrad.ru
+sudo certbot --nginx -d odi-group.ru -d www.odi-group.ru
 ```
+
+## Автоматический деплой на чистый Ubuntu 22.04
+
+Для полного bootstrap/deploy используйте скрипт `deploy/bootstrap-vps.sh`.
+
+Обязательные переменные окружения перед запуском:
+
+- `REPO_URL` — URL репозитория (SSH или HTTPS)
+- `CERTBOT_EMAIL` — email для Let's Encrypt
+- `TELEGRAM_BOT_TOKEN` — токен Telegram-бота
+- `TELEGRAM_CHAT_ID` — ID Telegram-чата
+
+Пример запуска:
+
+```bash
+chmod +x deploy/bootstrap-vps.sh
+REPO_URL=git@github.com:ORG/REPO.git \
+CERTBOT_EMAIL=admin@odi-group.ru \
+TELEGRAM_BOT_TOKEN=xxx \
+TELEGRAM_CHAT_ID=xxx \
+bash deploy/bootstrap-vps.sh
+```
+
+Опциональные переменные:
+
+- `DOMAIN` (по умолчанию `odi-group.ru`)
+- `WWW_DOMAIN` (по умолчанию `www.odi-group.ru`)
+- `BRANCH` (по умолчанию `main`)
+- `APP_ROOT` (по умолчанию `/var/www/odi`)
+- `SRC_DIR` (по умолчанию `$HOME/odi-group`)
+- `ALLOWED_ORIGINS` (по умолчанию `https://odi-group.ru,https://www.odi-group.ru`)
+- `ENABLE_UFW` (по умолчанию `true`)
 
 ## Данные проектов и галереи
 
