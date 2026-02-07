@@ -114,8 +114,6 @@ const Home = () => {
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0)
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
-  const galleryMainRef = useRef<HTMLDivElement | null>(null)
-  const [isGalleryFullscreen, setIsGalleryFullscreen] = useState(false)
 
   useEffect(() => {
     document.title = 'ОДИ — строительство индивидуальных домов в Калининграде'
@@ -173,20 +171,6 @@ const Home = () => {
     return () => document.removeEventListener('keydown', handleKey)
   }, [activeGallery])
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsGalleryFullscreen(document.fullscreenElement === galleryMainRef.current)
-    }
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
-  }, [])
-
-  useEffect(() => {
-    if (activeGallery) return
-    if (!document.fullscreenElement) return
-    document.exitFullscreen().catch(() => {})
-  }, [activeGallery])
-
   const filteredProjects = useMemo(() => {
     return projects.filter((project) => {
       const areaOk = filters.area ? project.area >= Number(filters.area) : true
@@ -223,31 +207,11 @@ const Home = () => {
     )
   }
 
-  const toggleGalleryFullscreen = async () => {
-    const element = galleryMainRef.current
-    if (!element) return
-
-    if (!document.fullscreenEnabled || !element.requestFullscreen) {
-      if (activeGalleryPhoto?.src) {
-        window.open(activeGalleryPhoto.src, '_blank', 'noopener')
-      }
-      return
-    }
-
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen()
-      } else {
-        await element.requestFullscreen()
-      }
-    } catch {
-      // ignore fullscreen errors
-    }
-  }
-
   return (
     <>
       <HeroSection onOpenCalculator={() => setIsCalculatorOpen(true)} />
+
+      <GallerySection items={galleryItems} onOpenGallery={openGallery} />
 
       <Section id="about">
         <Container>
@@ -263,7 +227,7 @@ const Home = () => {
                 суеты для клиента. Наш подход простой: вы выбираете дом и принимаете решения по
                 пунктам, а все заботы — от организации работ и материалов до контроля качества и
                 сроков — берём на себя. Слаженная команда и отточенные процессы позволяют получить
-                ключи от готового дома уже через 2–3 месяца. Вы заказываете — мы делаем идеально. И
+                ключи от готового дома уже через 3–4 месяца. Вы заказываете — мы делаем идеально. И
                 делаем так, чтобы вашим домом хотелось гордиться.
               </p>
               <div className="project-specs">
@@ -290,8 +254,6 @@ const Home = () => {
       </Section>
 
       <ServicesSection services={services} />
-
-      <GallerySection items={galleryItems} onOpenGallery={openGallery} />
 
       <Section id="process">
         <Container>
@@ -500,19 +462,8 @@ const Home = () => {
       >
         {activeGallery && activeGalleryPhoto && (
           <div className="gallery-modal">
-            <div className="gallery-main" ref={galleryMainRef}>
+            <div className="gallery-main">
               <img src={activeGalleryPhoto.src} alt={activeGalleryPhoto.alt} />
-              <button
-                className="gallery-fullscreen"
-                type="button"
-                onClick={toggleGalleryFullscreen}
-                aria-pressed={isGalleryFullscreen}
-                aria-label={
-                  isGalleryFullscreen ? 'Свернуть изображение' : 'Открыть изображение на весь экран'
-                }
-              >
-                {isGalleryFullscreen ? 'Свернуть' : 'На весь экран'}
-              </button>
               <button
                 className="gallery-nav gallery-nav-prev"
                 type="button"
