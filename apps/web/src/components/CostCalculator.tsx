@@ -369,7 +369,7 @@ const CostCalculator = () => {
             resetResult()
             setFieldErrors((current) => ({ ...current, name: '' }))
           }}
-          placeholder="Например, Антон Титов…"
+          placeholder="Например, Иван Петров…"
           autoComplete="name"
           error={fieldErrors.name}
           ref={nameRef}
