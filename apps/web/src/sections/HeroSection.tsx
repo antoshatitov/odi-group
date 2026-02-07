@@ -51,10 +51,10 @@ const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
           <div className="hero-visual">
             <div className="hero-image">
               <img
-                src="/images/hero-background.png"
+                src="/images/image.jpg"
                 alt="Современный дом в Калининградской области"
-                width={1536}
-                height={1024}
+                width={1024}
+                height={1536}
                 fetchPriority="high"
               />
             </div>
