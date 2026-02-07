@@ -130,6 +130,44 @@ bash deploy/bootstrap-vps.sh
 - `ALLOWED_ORIGINS` (по умолчанию `https://odi-group.ru,https://www.odi-group.ru`)
 - `ENABLE_UFW` (по умолчанию `true`)
 
+## App-Only деплой (после merge в main)
+
+Для регулярного деплоя изменений приложения без системных шагов (`apt`, `ufw`, `certbot`) используйте:
+
+```bash
+bash deploy/deploy-app-only.sh
+```
+
+Что делает `deploy/deploy-app-only.sh`:
+
+- подтягивает `origin/main` (или ветку из `BRANCH`)
+- собирает фронтенд (`npm run build:web`)
+- синхронизирует `apps/web/dist` и `apps/server` в `/var/www/odi`
+- устанавливает production зависимости backend
+- перезапускает `odi-leads.service`
+- выполняет health-check API и HTTP(S) проверки доменов
+
+Опциональные переменные:
+
+- `BRANCH` (по умолчанию `main`)
+- `SRC_DIR` (по умолчанию `$HOME/odi-group`)
+- `APP_ROOT` (по умолчанию `/var/www/odi`)
+- `SERVICE_NAME` (по умолчанию `odi-leads.service`)
+- `PORT` (по умолчанию `8080`)
+- `DOMAIN` (по умолчанию `odi-group.ru`)
+- `WWW_DOMAIN` (по умолчанию `www.odi-group.ru`)
+- `INSTALL_WORKSPACE_DEPS` (по умолчанию `true`)
+- `APPLY_PERMISSIONS` (по умолчанию `true`)
+
+Пример:
+
+```bash
+BRANCH=main \
+SRC_DIR=/root/odi-group \
+APP_ROOT=/var/www/odi \
+bash deploy/deploy-app-only.sh
+```
+
 ## Данные проектов и галереи
 
 - Проекты: `apps/web/src/data/projects.ts`
