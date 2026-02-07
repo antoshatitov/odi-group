@@ -9,8 +9,10 @@ BRANCH="${BRANCH:-main}"
 PORT="${PORT:-8080}"
 ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-https://${DOMAIN},https://${WWW_DOMAIN}}"
 ENABLE_UFW="${ENABLE_UFW:-true}"
+PRESERVE_ENV="${PRESERVE_ENV:-true}"
+SKIP_CERTBOT="${SKIP_CERTBOT:-false}"
 
-REPO_URL="${REPO_URL:?Set REPO_URL to the Git repository URL}"
+REPO_URL="${REPO_URL:-}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:?Set CERTBOT_EMAIL for Lets Encrypt}"
 TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN}"
 TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:?Set TELEGRAM_CHAT_ID}"
@@ -32,6 +34,32 @@ require_cmd() {
   fi
 }
 
+get_env_value() {
+  local key="$1"
+  local file="$2"
+
+  if [[ ! -f "$file" ]]; then
+    return
+  fi
+
+  grep -m 1 "^${key}=" "$file" | sed "s/^${key}=//" || true
+}
+
+merge_optional_env_value() {
+  local key="$1"
+  local incoming_value="$2"
+  local existing_file="$3"
+
+  if [[ "$PRESERVE_ENV" == "true" && -z "$incoming_value" ]]; then
+    local existing_value
+    existing_value="$(get_env_value "$key" "$existing_file")"
+    printf "%s" "$existing_value"
+    return
+  fi
+
+  printf "%s" "$incoming_value"
+}
+
 install_node20() {
   local node_major
   node_major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || true)"
@@ -46,17 +74,30 @@ install_node20() {
 }
 
 write_server_env() {
+  local existing_env="${APP_ROOT}/server/.env"
   local tmp_env
+  local merged_calc_bot_token
+  local merged_calc_chat_id
+  local merged_quarantine_chat_id
+  local merged_log_hash_salt
+  local merged_captcha_enabled
+
+  merged_calc_bot_token="$(merge_optional_env_value "TELEGRAM_CALC_BOT_TOKEN" "${TELEGRAM_CALC_BOT_TOKEN}" "${existing_env}")"
+  merged_calc_chat_id="$(merge_optional_env_value "TELEGRAM_CALC_CHAT_ID" "${TELEGRAM_CALC_CHAT_ID}" "${existing_env}")"
+  merged_quarantine_chat_id="$(merge_optional_env_value "TELEGRAM_QUARANTINE_CHAT_ID" "${TELEGRAM_QUARANTINE_CHAT_ID}" "${existing_env}")"
+  merged_log_hash_salt="$(merge_optional_env_value "LOG_HASH_SALT" "${LOG_HASH_SALT}" "${existing_env}")"
+  merged_captcha_enabled="$(merge_optional_env_value "CAPTCHA_ENABLED" "${CAPTCHA_ENABLED}" "${existing_env}")"
+
   tmp_env="$(mktemp)"
 
   cat >"$tmp_env" <<EOF
 TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
 TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
-TELEGRAM_CALC_BOT_TOKEN=${TELEGRAM_CALC_BOT_TOKEN}
-TELEGRAM_CALC_CHAT_ID=${TELEGRAM_CALC_CHAT_ID}
-TELEGRAM_QUARANTINE_CHAT_ID=${TELEGRAM_QUARANTINE_CHAT_ID}
-LOG_HASH_SALT=${LOG_HASH_SALT}
-CAPTCHA_ENABLED=${CAPTCHA_ENABLED}
+TELEGRAM_CALC_BOT_TOKEN=${merged_calc_bot_token}
+TELEGRAM_CALC_CHAT_ID=${merged_calc_chat_id}
+TELEGRAM_QUARANTINE_CHAT_ID=${merged_quarantine_chat_id}
+LOG_HASH_SALT=${merged_log_hash_salt}
+CAPTCHA_ENABLED=${merged_captcha_enabled}
 PORT=${PORT}
 ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
 EOF
@@ -144,9 +185,21 @@ main() {
   info "Preparing source code in ${SRC_DIR}"
   if [[ -d "${SRC_DIR}/.git" ]]; then
     git -C "${SRC_DIR}" fetch --prune origin
-    git -C "${SRC_DIR}" checkout "${BRANCH}"
-    git -C "${SRC_DIR}" pull --ff-only origin "${BRANCH}"
+    if git -C "${SRC_DIR}" show-ref --verify --quiet "refs/remotes/origin/${BRANCH}"; then
+      git -C "${SRC_DIR}" checkout -B "${BRANCH}" "origin/${BRANCH}"
+    else
+      echo "Branch origin/${BRANCH} not found in ${SRC_DIR}" >&2
+      exit 1
+    fi
   else
+    if [[ -d "${SRC_DIR}" && -n "$(ls -A "${SRC_DIR}" 2>/dev/null)" ]]; then
+      echo "SRC_DIR exists and is not a git repository: ${SRC_DIR}" >&2
+      exit 1
+    fi
+    if [[ -z "${REPO_URL}" ]]; then
+      echo "REPO_URL is required when cloning into ${SRC_DIR}" >&2
+      exit 1
+    fi
     git clone --branch "${BRANCH}" "${REPO_URL}" "${SRC_DIR}"
   fi
 
@@ -159,18 +212,22 @@ main() {
 
   info "Preparing deploy directories"
   sudo mkdir -p "${APP_ROOT}/web/dist" "${APP_ROOT}/server"
-  sudo chown -R "$USER:$USER" "${APP_ROOT}"
 
   info "Syncing frontend and backend files"
-  rsync -a --delete "${SRC_DIR}/apps/web/dist/" "${APP_ROOT}/web/dist/"
-  rsync -a --delete --exclude node_modules "${SRC_DIR}/apps/server/" "${APP_ROOT}/server/"
+  sudo rsync -a --delete "${SRC_DIR}/apps/web/dist/" "${APP_ROOT}/web/dist/"
+  sudo rsync -a --delete --exclude node_modules "${SRC_DIR}/apps/server/" "${APP_ROOT}/server/"
 
   info "Writing backend environment"
   write_server_env
 
   info "Installing backend production dependencies"
-  cd "${APP_ROOT}/server"
-  npm install --omit=dev
+  sudo npm install --omit=dev --prefix "${APP_ROOT}/server"
+
+  info "Applying ownership and permissions"
+  sudo chown -R root:www-data "${APP_ROOT}"
+  sudo find "${APP_ROOT}" -type d -exec chmod 750 {} \;
+  sudo find "${APP_ROOT}" -type f -exec chmod 640 {} \;
+  sudo chmod 640 "${APP_ROOT}/server/.env"
 
   info "Writing systemd and nginx configuration"
   write_systemd_service
@@ -185,17 +242,21 @@ main() {
   sudo nginx -t
   sudo systemctl reload nginx
 
-  info "Requesting SSL certificates via certbot"
-  if [[ -n "${WWW_DOMAIN}" ]]; then
-    sudo certbot --nginx -d "${DOMAIN}" -d "${WWW_DOMAIN}" -m "${CERTBOT_EMAIL}" \
-      --agree-tos --no-eff-email --redirect -n
+  if [[ "${SKIP_CERTBOT}" == "true" ]]; then
+    info "Skipping certbot step (SKIP_CERTBOT=true)"
   else
-    sudo certbot --nginx -d "${DOMAIN}" -m "${CERTBOT_EMAIL}" \
-      --agree-tos --no-eff-email --redirect -n
-  fi
+    info "Requesting SSL certificates via certbot"
+    if [[ -n "${WWW_DOMAIN}" ]]; then
+      sudo certbot --nginx -d "${DOMAIN}" -d "${WWW_DOMAIN}" -m "${CERTBOT_EMAIL}" \
+        --agree-tos --no-eff-email --redirect --keep-until-expiring --expand -n
+    else
+      sudo certbot --nginx -d "${DOMAIN}" -m "${CERTBOT_EMAIL}" \
+        --agree-tos --no-eff-email --redirect --keep-until-expiring --expand -n
+    fi
 
-  info "Verifying certbot renewal"
-  sudo certbot renew --dry-run
+    info "Verifying certbot renewal"
+    sudo certbot renew --dry-run
+  fi
 
   info "Post-deploy checks"
   sudo systemctl --no-pager --full status odi-leads.service | sed -n '1,20p'

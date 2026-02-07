@@ -104,10 +104,11 @@ sudo certbot --nginx -d odi-group.ru -d www.odi-group.ru
 
 Обязательные переменные окружения перед запуском:
 
-- `REPO_URL` — URL репозитория (SSH или HTTPS)
 - `CERTBOT_EMAIL` — email для Let's Encrypt
 - `TELEGRAM_BOT_TOKEN` — токен Telegram-бота
 - `TELEGRAM_CHAT_ID` — ID Telegram-чата
+
+`REPO_URL` обязателен только если `SRC_DIR` не содержит git-репозиторий и нужен `git clone`.
 
 Пример запуска:
 
@@ -129,6 +130,12 @@ bash deploy/bootstrap-vps.sh
 - `SRC_DIR` (по умолчанию `$HOME/odi-group`)
 - `ALLOWED_ORIGINS` (по умолчанию `https://odi-group.ru,https://www.odi-group.ru`)
 - `ENABLE_UFW` (по умолчанию `true`)
+- `PRESERVE_ENV` (по умолчанию `true`) — сохраняет существующие optional env-значения при повторном запуске скрипта
+- `SKIP_CERTBOT` (по умолчанию `false`) — пропускает шаги `certbot` и `certbot renew --dry-run`
+
+Поведение при повторном запуске:
+
+- optional переменные (`TELEGRAM_CALC_*`, `TELEGRAM_QUARANTINE_CHAT_ID`, `LOG_HASH_SALT`, `CAPTCHA_ENABLED`) не затираются пустыми значениями, если `PRESERVE_ENV=true`.
 
 ## Данные проектов и галереи
 
