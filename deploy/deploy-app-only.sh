@@ -10,6 +10,8 @@ DOMAIN="${DOMAIN:-odi-group.ru}"
 WWW_DOMAIN="${WWW_DOMAIN:-www.odi-group.ru}"
 INSTALL_WORKSPACE_DEPS="${INSTALL_WORKSPACE_DEPS:-true}"
 APPLY_PERMISSIONS="${APPLY_PERMISSIONS:-true}"
+HEALTHCHECK_RETRIES="${HEALTHCHECK_RETRIES:-10}"
+HEALTHCHECK_DELAY="${HEALTHCHECK_DELAY:-1}"
 
 info() {
   printf '\n[%s] %s\n' "$(date '+%F %T')" "$*"
@@ -20,6 +22,27 @@ require_cmd() {
     echo "Missing required command: $1" >&2
     exit 1
   fi
+}
+
+wait_for_healthcheck() {
+  local url="$1"
+  local retries="$2"
+  local delay="$3"
+  local attempt=1
+
+  while (( attempt <= retries )); do
+    if curl -fsS "$url" >/dev/null 2>&1; then
+      return 0
+    fi
+
+    if (( attempt < retries )); then
+      sleep "$delay"
+    fi
+
+    attempt=$((attempt + 1))
+  done
+
+  return 1
 }
 
 main() {
@@ -92,7 +115,12 @@ main() {
 
   info "Post-deploy checks"
   sudo systemctl is-active "${SERVICE_NAME}"
-  curl -fsS "http://127.0.0.1:${PORT}/api/health"
+  local healthcheck_url="http://127.0.0.1:${PORT}/api/health"
+  if ! wait_for_healthcheck "${healthcheck_url}" "${HEALTHCHECK_RETRIES}" "${HEALTHCHECK_DELAY}"; then
+    echo "Healthcheck failed after ${HEALTHCHECK_RETRIES} attempts: ${healthcheck_url}" >&2
+    exit 1
+  fi
+  curl -fsS "${healthcheck_url}"
   curl -I "https://${DOMAIN}"
   if [[ -n "${WWW_DOMAIN}" ]]; then
     curl -I "https://${WWW_DOMAIN}"
