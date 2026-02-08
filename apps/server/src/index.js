@@ -13,18 +13,22 @@ const server = Fastify({
 })
 
 const REQUIRED_ENV = ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID']
-const missingEnv = REQUIRED_ENV.filter((key) => !process.env[key])
+const readEnv = (value) => {
+  if (!value) return ''
+  return value.trim()
+}
+const missingEnv = REQUIRED_ENV.filter((key) => !readEnv(process.env[key]))
 
 if (missingEnv.length > 0) {
   server.log.error({ missingEnv }, 'Missing required environment variables')
   process.exit(1)
 }
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID
-const CALC_BOT_TOKEN = process.env.TELEGRAM_CALC_BOT_TOKEN
-const CALC_CHAT_ID = process.env.TELEGRAM_CALC_CHAT_ID
-const QUARANTINE_CHAT_ID = process.env.TELEGRAM_QUARANTINE_CHAT_ID
+const TELEGRAM_BOT_TOKEN = readEnv(process.env.TELEGRAM_BOT_TOKEN)
+const TELEGRAM_CHAT_ID = readEnv(process.env.TELEGRAM_CHAT_ID)
+const CALC_BOT_TOKEN = readEnv(process.env.TELEGRAM_CALC_BOT_TOKEN) || TELEGRAM_BOT_TOKEN
+const CALC_CHAT_ID = readEnv(process.env.TELEGRAM_CALC_CHAT_ID) || TELEGRAM_CHAT_ID
+const QUARANTINE_CHAT_ID = readEnv(process.env.TELEGRAM_QUARANTINE_CHAT_ID) || CALC_CHAT_ID
 const LOG_HASH_SALT = process.env.LOG_HASH_SALT || 'odi-calc'
 const CAPTCHA_ENABLED = process.env.CAPTCHA_ENABLED === 'true'
 const PORT = Number(process.env.PORT || 8080)
