@@ -63,7 +63,13 @@ main() {
 
   info "Syncing frontend and backend files"
   sudo rsync -a --delete "${SRC_DIR}/apps/web/dist/" "${APP_ROOT}/web/dist/"
-  sudo rsync -a --delete --exclude node_modules "${SRC_DIR}/apps/server/" "${APP_ROOT}/server/"
+  # Keep server-side secrets that are not stored in git.
+  sudo rsync -a --delete --exclude node_modules --exclude .env "${SRC_DIR}/apps/server/" "${APP_ROOT}/server/"
+
+  if [[ ! -f "${APP_ROOT}/server/.env" ]]; then
+    echo "Missing ${APP_ROOT}/server/.env. Restore environment file before restarting service." >&2
+    exit 1
+  fi
 
   info "Installing backend production dependencies"
   sudo npm install --omit=dev --prefix "${APP_ROOT}/server"
