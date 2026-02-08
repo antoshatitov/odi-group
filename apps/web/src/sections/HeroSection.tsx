@@ -55,7 +55,8 @@ const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
                 alt="Современный дом в Калининградской области"
                 width={1024}
                 height={1536}
-                fetchPriority="high"
+                loading="eager"
+                decoding="async"
               />
             </div>
           </div>

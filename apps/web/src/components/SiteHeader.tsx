@@ -24,6 +24,21 @@ const SiteHeader = () => {
     }
   }, [open])
 
+  useEffect(() => {
+    if (!open) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open])
+
   return (
     <header className="site-header">
       <div className="container header-inner">
@@ -61,8 +76,14 @@ const SiteHeader = () => {
         </div>
       </div>
       {open && (
-        <div className="mobile-nav" role="dialog" aria-modal="true">
-          <div className="mobile-nav-panel">
+        <div
+          className="mobile-nav"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Мобильное меню"
+          onClick={() => setOpen(false)}
+        >
+          <div className="mobile-nav-panel" onClick={(event) => event.stopPropagation()}>
             <div className="mobile-nav-header">
               <a className="logo" href="/" onClick={() => setOpen(false)}>
                 <img src="/images/logo.png" alt="ОДИ" width={1000} height={1000} />

@@ -113,7 +113,7 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
   }
 
   return (
-    <form className="stack" onSubmit={handleSubmit}>
+    <form className="stack" onSubmit={handleSubmit} noValidate>
       <Input
         label="Имя"
         name="name"
@@ -171,6 +171,8 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
           <input
             type="checkbox"
             checked={consent}
+            aria-invalid={Boolean(fieldErrors.consent)}
+            aria-describedby={fieldErrors.consent ? 'lead-consent-error' : undefined}
             onChange={(event) => {
               setConsent(event.target.checked)
               setFieldErrors((current) => ({ ...current, consent: '' }))
@@ -186,7 +188,11 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
             .
           </span>
         </label>
-        {fieldErrors.consent && <span className="field-error">{fieldErrors.consent}</span>}
+        {fieldErrors.consent && (
+          <span className="field-error" id="lead-consent-error" role="alert">
+            {fieldErrors.consent}
+          </span>
+        )}
       </div>
       {status === 'success' && (
         <div className="badge" role="status">

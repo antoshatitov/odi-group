@@ -245,7 +245,7 @@ const CostCalculator = () => {
         Укажите основные параметры будущего дома — рассчитаем ориентировочную стоимость и свяжемся
         с вами в течение двух часов.
       </p>
-      <form className="calculator-form" onSubmit={handleSubmit}>
+      <form className="calculator-form" onSubmit={handleSubmit} noValidate>
         <div className="calculator-grid">
           <label className="field">
             <span>Количество этажей</span>
@@ -409,6 +409,8 @@ const CostCalculator = () => {
             <input
               type="checkbox"
               checked={consent}
+              aria-invalid={Boolean(fieldErrors.consent)}
+              aria-describedby={fieldErrors.consent ? 'consent-error' : undefined}
               onChange={(event) => {
                 setConsent(event.target.checked)
                 resetResult()
@@ -425,7 +427,11 @@ const CostCalculator = () => {
               .
             </span>
           </label>
-          {fieldErrors.consent && <span className="field-error">{fieldErrors.consent}</span>}
+          {fieldErrors.consent && (
+            <span className="field-error" id="consent-error" role="alert">
+              {fieldErrors.consent}
+            </span>
+          )}
         </div>
 
         {status === 'error' && error && (
