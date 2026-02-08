@@ -16,6 +16,7 @@ const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
 const phonePattern = /^[0-9+()\s-]{7,20}$/
 
 const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
+  const isConsultation = source === 'consultation'
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [message, setMessage] = useState('')
@@ -63,6 +64,9 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
     }
     if (!phonePattern.test(phone.trim())) {
       nextErrors.phone = 'Введите корректный номер телефона.'
+    }
+    if (isConsultation && message.trim().length === 0) {
+      nextErrors.message = 'Опишите ваш вопрос в комментарии.'
     }
     if (!consent) {
       nextErrors.consent = 'Подтвердите согласие на обработку персональных данных.'
@@ -148,11 +152,13 @@ const LeadForm = ({ source, projectId, projectName }: LeadFormProps) => {
         label="Комментарий"
         name="message"
         value={message}
+        required={isConsultation}
         onChange={(event) => {
           setMessage(event.target.value)
           setFieldErrors((current) => ({ ...current, message: '' }))
         }}
         placeholder="Коротко опишите задачу или пожелания…"
+        error={fieldErrors.message}
         ref={messageRef}
       />
       <label className="field" style={{ display: 'none' }} aria-hidden="true">

@@ -95,6 +95,7 @@ const normalizeText = (value, max) => {
 }
 
 const buildTelegramMessage = ({
+  title,
   name,
   phone,
   message,
@@ -102,8 +103,9 @@ const buildTelegramMessage = ({
   projectId,
   source,
 }) => {
+  const normalizedMessage = normalizeText(message, 500)
   const lines = [
-    'Новая заявка «ОДИ»',
+    title || 'Новая заявка «ОДИ»',
     `Имя: ${normalizeText(name, 80)}`,
     `Телефон: ${normalizeText(phone, 20)}`,
   ]
@@ -117,8 +119,8 @@ const buildTelegramMessage = ({
     )
   }
 
-  if (message) {
-    lines.push(`Комментарий: ${normalizeText(message, 500)}`)
+  if (normalizedMessage) {
+    lines.push(`Комментарий: ${normalizedMessage}`)
   }
 
   if (source) {
@@ -546,9 +548,16 @@ server.post('/api/cost-estimate', { schema: costSchema }, async (request, reply)
 server.post('/api/lead', { schema: leadSchema }, async (request, reply) => {
   const { name, phone, message, projectId, projectName, source, consent, website } =
     request.body
+  const isConsultation = source === 'consultation'
+  const normalizedMessage = normalizeText(message, 500)
 
   if (!consent) {
     reply.code(400).send({ error: 'Consent is required' })
+    return
+  }
+
+  if (isConsultation && !normalizedMessage) {
+    reply.code(400).send({ error: 'Message is required' })
     return
   }
 
@@ -560,22 +569,25 @@ server.post('/api/lead', { schema: leadSchema }, async (request, reply) => {
   const payload = {
     name,
     phone,
-    message,
+    message: normalizedMessage,
     projectId,
     projectName,
     source,
+    title: isConsultation ? 'Запрос консультации' : undefined,
   }
 
   const telegramMessage = buildTelegramMessage(payload)
+  const botToken = isConsultation ? CALC_BOT_TOKEN : TELEGRAM_BOT_TOKEN
+  const chatId = isConsultation ? CALC_CHAT_ID : TELEGRAM_CHAT_ID
 
   try {
     const response = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      `https://api.telegram.org/bot${botToken}/sendMessage`,
       {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
+          chat_id: chatId,
           text: telegramMessage,
           disable_web_page_preview: true,
         }),
@@ -599,7 +611,7 @@ server.post('/api/lead', { schema: leadSchema }, async (request, reply) => {
       {
         event: 'lead_sent',
         projectId: projectId || null,
-        hasMessage: Boolean(message),
+        hasMessage: Boolean(normalizedMessage),
       },
       'Lead delivered',
     )
