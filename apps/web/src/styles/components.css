@@ -407,18 +407,22 @@
 
 @media (max-width: 900px) {
   .modal {
-    grid-template-columns: 1fr;
-    height: auto;
+    display: flex;
+    flex-direction: column;
+    height: min(92vh, calc(100vh - (var(--space-5) * 2)));
     max-height: 92vh;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
-  .modal-body {
+  .modal-body,
+  .modal-side {
+    min-height: auto;
+    flex-shrink: 0;
     overflow: visible;
   }
 
   .modal-side {
-    overflow: visible;
     border-top: 1px solid rgba(18, 25, 23, 0.08);
   }
 }
