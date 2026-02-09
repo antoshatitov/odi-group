@@ -24,6 +24,8 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--color-ink-900);
+  min-height: 2.75rem;
+  padding: 0.2rem 0;
 }
 
 .logo img {
@@ -50,7 +52,10 @@
 
 .nav-link {
   position: relative;
-  padding: 0.25rem 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.4rem;
+  min-height: 2.75rem;
 }
 
 .nav-link::after {
@@ -119,6 +124,13 @@
   display: grid;
   gap: var(--space-3);
   font-size: var(--text-lg);
+}
+
+.mobile-nav-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.2rem;
 }
 
 .mobile-nav-actions {
@@ -465,13 +477,13 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
+  font-size: 1rem;
   color: #f8f6f1;
   background: rgba(18, 25, 23, 0.6);
   transition: background var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
@@ -546,6 +558,13 @@
   gap: var(--space-4);
 }
 
+.contact-card a:not(.btn) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.25rem 0;
+}
+
 .map-frame {
   border-radius: var(--radius-l);
   overflow: hidden;
@@ -571,6 +590,13 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-6);
+}
+
+.footer-grid a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.25rem 0;
 }
 
 .footer-bottom {
