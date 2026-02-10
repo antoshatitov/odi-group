@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+
 import Button from '../components/Button'
 import Container from '../components/Container'
 import Section from '../components/Section'
@@ -8,6 +10,17 @@ type HeroSectionProps = {
 }
 
 const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
+  const heroVideoRef = useRef<HTMLVideoElement | null>(null)
+
+  useEffect(() => {
+    const heroVideo = heroVideoRef.current
+    if (!heroVideo) return
+
+    heroVideo.muted = true
+    heroVideo.setAttribute('muted', '')
+    void heroVideo.play().catch(() => undefined)
+  }, [])
+
   return (
     <Section className="hero" id="hero">
       <Container size="wide">
@@ -50,14 +63,18 @@ const HeroSection = ({ onOpenCalculator }: HeroSectionProps) => {
           </div>
           <div className="hero-visual">
             <div className="hero-image">
-              <img
-                src="/images/image.jpg"
-                alt="Современный дом в Калининградской области"
-                width={1024}
-                height={1536}
-                loading="eager"
-                decoding="async"
-              />
+              <video
+                ref={heroVideoRef}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                poster="/images/image.jpg"
+                aria-label="Современный дом в Калининградской области"
+              >
+                <source src="/videos/hero-video.mp4" type="video/mp4" />
+              </video>
             </div>
           </div>
         </div>
